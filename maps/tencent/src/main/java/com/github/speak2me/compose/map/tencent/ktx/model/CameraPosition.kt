@@ -1,0 +1,34 @@
+/*
+ * Copyright © 2025 J!nl!n™ Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.github.speak2me.compose.map.tencent.ktx.model
+
+import com.tencent.tencentmap.mapsdk.maps.model.CameraPosition
+import com.github.speak2me.compose.map.tencent.CameraPosition as ComposeCameraPosition
+
+/**
+ * Builds a new [CameraPosition] using the provided [optionsActions]. Using this removes the need
+ * to construct a [CameraPosition.Builder] object.
+ *
+ * @return the constructed [CameraPosition]
+ */
+public inline fun cameraPosition(optionsActions: CameraPosition.Builder.() -> Unit): CameraPosition =
+    CameraPosition.Builder().apply(optionsActions).build()
+
+public inline fun CameraPosition.toComposeCameraPosition(): ComposeCameraPosition {
+    return ComposeCameraPosition(target, zoom, bearing, tilt)
+}
+
+

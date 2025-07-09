@@ -1,0 +1,110 @@
+/*
+ * Copyright © 2025 J!nl!n™ Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.github.speak2me.compose.map.amap
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ComposeNode
+import androidx.compose.runtime.currentComposer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.amap.api.maps.model.AMapPara.LineJoinType
+import com.amap.api.maps.model.LatLng
+import com.amap.api.maps.model.Polygon
+import com.github.speak2me.compose.map.amap.ktx.addPolygon
+import com.github.speak2me.compose.map.amap.ktx.model.polygonHoleOptions
+
+internal class PolygonNode(
+    val polygon: Polygon,
+    var onPolygonClick: (Polygon) -> Unit
+) : MapNode {
+    override fun onRemoved() {
+        polygon.remove()
+    }
+}
+
+/**
+ * A composable for a polygon on the map.
+ *
+ * @param points the points comprising the vertices of the polygon
+ * @param clickable boolean indicating if the polygon is clickable or not
+ * @param fillColor the fill color of the polygon
+ * @param geodesic specifies whether to draw each segment as a geodesic
+ * @param holes the holes for the polygon
+ * @param strokeColor the stroke color of the polygon
+ * @param strokeJointType the joint type for all vertices of the polygon's outline
+ * @param strokeWidth specifies the polygon's stroke width, in display pixels
+ * @param tag optional tag to associate with the polygon
+ * @param visible the visibility of the polygon
+ * @param zIndex the z-index of the polygon
+ * @param onClick a lambda invoked when the polygon is clicked
+ */
+@Composable
+@AMapComposable
+public fun Polygon(
+    points: List<LatLng>,
+    clickable: Boolean = false,
+    fillColor: Color = Color.Black,
+    geodesic: Boolean = false,
+    holes: List<List<LatLng>> = emptyList(),
+    strokeColor: Color = Color.Black,
+    strokeJointType: LineJoinType = LineJoinType.LineJoinBevel,
+//    strokePattern: List<PatternItem>? = null,
+    strokeWidth: Float = 10f,
+    tag: Any? = null,
+    visible: Boolean = true,
+    zIndex: Float = 0f,
+    onClick: (Polygon) -> Unit = {}
+) {
+    if (points.isEmpty()) return // avoid SDK crash
+
+    val mapApplier = currentComposer.applier as MapApplier?
+    ComposeNode<PolygonNode, MapApplier>(
+        factory = {
+            val polygon = mapApplier?.map?.addPolygon {
+                addAll(points)
+//                clickable(clickable)
+                fillColor(fillColor.toArgb())
+//                geodesic(geodesic)
+                for (hole in holes) {
+                    addHoles(polygonHoleOptions { addAll(hole) })
+                }
+                strokeColor(strokeColor.toArgb())
+                lineJoinType(strokeJointType)
+//                strokePattern(strokePattern)
+                strokeWidth(strokeWidth)
+                visible(visible)
+                zIndex(zIndex)
+            } ?: error("Error adding polygon")
+//            polygon.tag = tag
+            PolygonNode(polygon, onClick)
+        },
+        update = {
+            update(onClick) { this.onPolygonClick = it }
+            update(points) { this.polygon.points = it }
+//            update(clickable) { this.polygon.isClickable = it }
+            update(fillColor) { this.polygon.fillColor = it.toArgb() }
+//            update(geodesic) { this.polygon.isGeodesic = it }
+            update(holes) { this.polygon.holeOptions = it.map { hole -> polygonHoleOptions { addAll(hole) } } }
+            update(strokeColor) { this.polygon.strokeColor = it.toArgb() }
+//            update(strokeJointType) { this.polygon.strokeJointType = it }
+//            update(strokePattern) { this.polygon.strokePattern = it }
+            update(strokeWidth) { this.polygon.strokeWidth = it }
+//            update(tag) { this.polygon.tag = it }
+            update(visible) { this.polygon.isVisible = it }
+            update(zIndex) { this.polygon.zIndex = it }
+        }
+    )
+}
