@@ -1,39 +1,53 @@
 package com.github.speak2me.app.compose.map.demo.amap
 
-import android.graphics.Color
+import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BusAlert
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.amap.api.maps.AMapOptions
+import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.CoordinateConverter
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
 import com.amap.api.maps.model.MyLocationStyle
-import com.amap.api.maps.model.MyLocationStyle.LOCATION_TYPE_FOLLOW
-import com.amap.api.maps.model.MyLocationStyle.LOCATION_TYPE_LOCATE
+import com.github.speak2me.app.compose.map.DisappearingScaleBar
 import com.github.speak2me.app.compose.map.R
 import com.github.speak2me.app.compose.map.demo.components.LayerTypeItem
 import com.github.speak2me.app.compose.map.demo.components.MapPanel
+import com.github.speak2me.app.compose.map.demo.components.MarkerInfoContent
+import com.github.speak2me.app.compose.map.demo.utils.merge
+import com.github.speak2me.app.compose.map.demo.utils.saveBitmapToFile
+import com.github.speak2me.app.compose.map.demo.utils.useLocationPermission
 import com.github.speak2me.app.compose.map.ui.theme.MapComposeTheme
 import com.github.speak2me.compose.map.amap.AMap
+import com.github.speak2me.compose.map.amap.CameraPositionState
 import com.github.speak2me.compose.map.amap.ComposeMapColorScheme
 import com.github.speak2me.compose.map.amap.MapEffect
 import com.github.speak2me.compose.map.amap.MapProperties
@@ -41,10 +55,12 @@ import com.github.speak2me.compose.map.amap.MapType
 import com.github.speak2me.compose.map.amap.MapUiSettings
 import com.github.speak2me.compose.map.amap.MapsComposeExperimentalApi
 import com.github.speak2me.compose.map.amap.Marker
+import com.github.speak2me.compose.map.amap.MarkerInfoWindowComposable
 import com.github.speak2me.compose.map.amap.Polyline
 import com.github.speak2me.compose.map.amap.ktx.snapshot
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
 import com.github.speak2me.compose.map.amap.rememberUpdatedMarkerState
+import kotlinx.coroutines.launch
 
 class AMapActivity : ComponentActivity() {
 
@@ -56,6 +72,12 @@ class AMapActivity : ComponentActivity() {
                 AMapScreen()
             }
         }
+
+//        val client = AMapLocationClient(this)
+//        client.setLocationListener {
+//            println("location111 = $it")
+//        }
+//        client.startLocation()
     }
 }
 
@@ -102,11 +124,23 @@ val tracks = listOf(
     LatLng(31.847065, 117.121938)
 )
 
-private val defaultLocation = LatLng(31.847229, 117.122685)
+private val defaultLocation = LatLng(31.849193465179447, 117.12530114551642)
 
-@OptIn(MapsComposeExperimentalApi::class)
 @Composable
 private fun AMapScreen() {
+    var isMyLocationEnabled by remember { mutableStateOf(false) }
+
+    useLocationPermission(
+        onPermissionGranted = {
+            isMyLocationEnabled = true
+            println("permission granted")
+        }
+    )
+    AMapScreen(isMyLocationEnabled)
+}
+
+@Composable
+private fun AMapScreen(isMyLocationEnabled: Boolean) {
 
     val context = LocalContext.current
 
@@ -117,6 +151,8 @@ private fun AMapScreen() {
     val points = tracks.map {
         converter.coord(it).convert().apply(builder::include)
     }
+    // 判断是是横向还是纵向，设置 padding
+    val bounds = builder.build()
 
     val cameraPositionState = rememberCameraPositionState()
 
@@ -124,27 +160,20 @@ private fun AMapScreen() {
         AMapLocationSource(context, cameraPositionState)
     }
 
-    val locations = remember {
-        mutableStateListOf<LatLng>()
-    }
-
-    var properties by remember {
+    var properties by remember(isMyLocationEnabled) {
         mutableStateOf(
-            MapProperties(
-                isMyLocationEnabled = true,
-                mapType = MapType.NORMAL,
-            )
+            MapProperties(isMyLocationEnabled = isMyLocationEnabled)
         )
     }
 
     val uiSettings by remember {
         mutableStateOf(
             MapUiSettings(
-                compassEnabled = true,
+                compassEnabled = false,
                 myLocationButtonEnabled = true,
-                scaleControlsEnabled = false,
+                scaleControlsEnabled = true,
                 tiltGesturesEnabled = false,
-                zoomControlsEnabled = false,
+//                zoomControlsEnabled = false,
             )
         )
     }
@@ -155,19 +184,40 @@ private fun AMapScreen() {
 
     // Define your layer types here
     val layerTypes = listOf(
-        LayerTypeItem(MapType.NORMAL, Icons.Filled.Map, "Normal"),
-        LayerTypeItem(MapType.SATELLITE, Icons.Filled.Public, "Satellite"),
-        LayerTypeItem(MapType.NAVI, Icons.Filled.Navigation, "Navigation"),
-        LayerTypeItem(MapType.BUS, Icons.Filled.BusAlert, "Bus"),
-        // Add more layer types as needed, e.g., TERRAIN, HYBRID
-        // LayerTypeItem(MapType.TERRAIN, Icons.Filled.Terrain, "Terrain"), // Example
+        LayerTypeItem(MapType.NORMAL, Icons.Filled.Map),
+        LayerTypeItem(MapType.SATELLITE, Icons.Filled.Public),
+        LayerTypeItem(MapType.NAVI, Icons.Filled.Navigation),
+        LayerTypeItem(MapType.BUS, Icons.Filled.BusAlert),
+        LayerTypeItem(MapType.NAVI_NIGHT, Icons.Filled.Nightlight),
     )
 
+    var isMapLoaded by remember { mutableStateOf(false) }
+    var shouldTakeScreenshot by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
+    val locations = remember {
+        mutableStateListOf<LatLng>()
+    }
+
+    val current by locationSource.current.collectAsStateWithLifecycle()
+
+    val markerState = rememberUpdatedMarkerState(
+        position = LatLng(31.835367246976922, 117.09781923241997)
+    ).apply {
+//        showInfoWindow()
+        println("markerState: $this")
+    }
+
+    val icon = remember {
+        BitmapDescriptorFactory.fromResource(R.drawable.route_ic_track_point)
+    }
+
     AMap(
-//        modifier = Modifier.navigationBarsPadding(),
+        modifier = Modifier.statusBarsPadding(),
         cameraPositionState = cameraPositionState,
-        locationSource = locationSource,
         properties = properties,
+        locationSource = locationSource,
         uiSettings = uiSettings,
         mapColorScheme = mapColorScheme,
         onMapClick = {
@@ -177,41 +227,104 @@ private fun AMapScreen() {
         onPOIClick = {
             println("a onPOIClick: $it")
             locations.add(it.coordinate)
+        },
+        onMapLoaded = {
+            isMapLoaded = true
         }
     ) {
-        Marker(
-            state = rememberUpdatedMarkerState(defaultLocation),
-            icon = BitmapDescriptorFactory.fromResource(R.drawable.route_ic_track_location)
-        )
-
-        locations.forEachIndexed { index, location ->
-            key(location) {
-                Marker(
-                    state = rememberUpdatedMarkerState(location),
-                    anchor = Offset(0.5f, 0.5f),
-                    icon = BitmapDescriptorFactory.fromResource(R.drawable.route_ic_point_start),
-                    onClick = { true }
-                )
-            }
-        }
-
-        Polyline(points = locations.map { converter.from(CoordinateConverter.CoordType.GOOGLE).coord(it).convert() })
-        Polyline(points = points)
-
-        MapEffect {
-//            it.snapshot {
-//
-//            }
-            it.isMyLocationEnabled = true
+        @OptIn(MapsComposeExperimentalApi::class)
+        MapEffect(Unit) {
+            // https://lbs.amap.com/api/android-sdk/guide/create-map/mylocation#s1
+//            it.isMyLocationEnabled = true
             it.myLocationStyle = MyLocationStyle().apply {
-                myLocationIcon(BitmapDescriptorFactory.fromResource(R.drawable.route_ic_my_location))
-                showMyLocation(true)
-                myLocationType(LOCATION_TYPE_LOCATE)
-                strokeWidth(0f)
-                radiusFillColor(Color.TRANSPARENT)
+//                myLocationIcon(BitmapDescriptorFactory.fromResource(R.drawable.route_ic_my_location))
+                showMyLocation(false)
+//                myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATE)
+//                strokeWidth(0f)
+//                strokeColor(Color.TRANSPARENT)
+//                radiusFillColor(Color.TRANSPARENT)
             }
             it.uiSettings.setLogoMarginRate(AMapOptions.LOGO_MARGIN_BOTTOM, 0.5f)
         }
+
+        Current(current, cameraPositionState)
+
+        Marker(
+            state = rememberUpdatedMarkerState(defaultLocation),
+            icon = BitmapDescriptorFactory.fromBitmap(context.getDrawable(R.drawable.route_ic_track_location)!!.merge(context.getDrawable(R.drawable.icon_bridge)!!)),
+            onClick = {
+                locations.add(it.position)
+                true
+            }
+        )
+        Marker(
+            position = LatLng(31.835367246976922, 117.09781923241997),
+            drawable = R.drawable.route_ic_point_start,
+        )
+        MarkerInfoWindowComposable(
+            state = markerState,
+            zIndex = 10f,
+            anchor = Offset(0.5f, 0.5f),
+            infoWindowAnchor = Offset(0.5f, 1f),
+            onClick = {
+                markerState.showInfoWindow()
+                true
+            },
+            infoContent = {
+                MarkerInfoContent()
+            }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.route_ic_track_point),
+                contentDescription = "Marker",
+            )
+        }
+
+        LaunchedEffect(markerState) {
+            markerState.showInfoWindow()
+        }
+
+//        MarkerInfoWindowComposable(
+//            state = markerState,
+//            anchor = Offset(0.5f, 0.5f),
+//        ) {
+//            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+//                MarkerInfoContent()
+//                Image(
+//                    painter = painterResource(id = R.drawable.route_ic_track_point),
+//                    contentDescription = "Marker",
+//                )
+//            }
+//        }
+//        MarkerInfoWindow(
+//            state = markerState,
+//            icon = icon,
+//            zIndex = 10f,
+//            anchor = Offset(0.5f, 0.5f),
+//            onClick = {
+//                markerState.showInfoWindow()
+//                true
+//            },
+//        ) {
+//            MarkerInfoContent()
+//        }
+
+        Locations(locations, onClick = locations::add)
+
+        Polyline(points = locations.map { it })
+        Polyline(points = points)
+//
+        if (isMapLoaded) {
+            Screenshot(shouldTakeScreenshot) { bitmap ->
+                bitmap?.let {
+                    scope.launch {
+                        context.saveBitmapToFile(bitmap, "amap")
+                    }
+                }
+                shouldTakeScreenshot = false
+            }
+        }
+
     }
 
     MapPanel(
@@ -227,5 +340,72 @@ private fun AMapScreen() {
         onMapTypeChange = { newMapType ->
             properties = properties.copy(mapType = newMapType)
         },
+        onScreenshot = {
+            shouldTakeScreenshot = true
+        }
+    ) {
+        Text("${cameraPositionState.position.zoom} - ${cameraPositionState.map?.scalePerPixel}")
+        DisappearingScaleBar(
+            cameraPositionState = cameraPositionState,
+            modifier = Modifier
+        )
+    }
+}
+
+@Composable
+private fun Marker(position: LatLng, @DrawableRes drawable: Int, onClick: (LatLng) -> Unit = {}) {
+    Marker(
+        state = rememberUpdatedMarkerState(position),
+        icon = BitmapDescriptorFactory.fromResource(drawable),
+        anchor = Offset(0.5f, 0.5f),
+        onClick = {
+            onClick(it.position)
+            false
+        }
     )
+}
+
+@Composable
+private fun Current(location: LatLng?, cameraPositionState: CameraPositionState) {
+    location ?: return
+    Marker(
+        position = location,
+        drawable = R.drawable.route_ic_my_location,
+    )
+    LaunchedEffect(location) {
+        cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(location, 15f))
+    }
+}
+
+@Composable
+private fun Locations(locations: List<LatLng>, onClick: (LatLng) -> Unit) {
+    locations.forEachIndexed { index, location ->
+        val drawable by remember {
+            derivedStateOf {
+                when (index) {
+                    0 -> R.drawable.route_ic_point_start
+                    else -> R.drawable.route_ic_point_end
+                }
+            }
+        }
+        key(location) {
+            Marker(
+                position = location,
+                drawable = drawable,
+//                onClick = onClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun Screenshot(shouldTakeScreenshot: Boolean, onScreenshotTaken: (Bitmap?) -> Unit) {
+    @OptIn(MapsComposeExperimentalApi::class)
+    MapEffect(shouldTakeScreenshot) { map ->
+        if (shouldTakeScreenshot) {
+            map.snapshot { bitmap ->
+                onScreenshotTaken(bitmap)
+            }
+        }
+    }
 }

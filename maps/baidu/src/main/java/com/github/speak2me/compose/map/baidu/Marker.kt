@@ -15,16 +15,31 @@
  */
 package com.github.speak2me.compose.map.baidu
 
-import androidx.compose.runtime.*
+import android.os.Bundle
+import android.view.View
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ComposeNode
+import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.currentComposer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.StateFactoryMarker
 import androidx.compose.ui.geometry.Offset
+import androidx.core.os.bundleOf
 import com.baidu.mapapi.map.BitmapDescriptor
+import com.baidu.mapapi.map.BitmapDescriptorFactory
 import com.baidu.mapapi.map.Marker
 import com.baidu.mapapi.map.TitleOptions
 import com.baidu.mapapi.model.LatLng
 import com.github.speak2me.compose.map.baidu.ktx.addMarker
+import kotlin.math.roundToInt
 import com.baidu.mapapi.map.MarkerOptions as AdvancedMarkerOptions
 
 internal class MarkerNode(
@@ -629,13 +644,18 @@ private fun MarkerImpl(
                 draggable(draggable)
                 flat(flat)
                 icon(icon)
-                anchor(infoWindowAnchor.x, infoWindowAnchor.y)
+//                infoWindowAnchor(infoWindowAnchor.x, infoWindowAnchor.y)
                 position(state.position)
                 rotate(rotation)
 //                snippet(snippet)
                 title(title)
                 visible(visible)
-                zIndex(zIndex.toInt())
+                zIndex(zIndex.roundToInt())
+                val extra = Bundle().apply {
+                    snippet?.let { putString("snippet", it) }
+                    putInt("infoWindowYOffset", ((icon?.bitmap?.height ?: 1) * infoWindowAnchor.y).roundToInt())
+                }
+                extraInfo(extra)
             } ?: error("Error adding marker")
 //            marker.tag = tag
             MarkerNode(
@@ -663,15 +683,15 @@ private fun MarkerImpl(
             update(draggable) { this.marker.isDraggable = it }
             update(flat) { this.marker.isFlat = it }
             update(icon) { this.marker.icon = it }
-//            update(infoWindowAnchor) { this.marker.setInfoWindowAnchor(it.x, it.y) }
+            update(infoWindowAnchor) { this.marker.updateInfoWindowYOffset(it.y.roundToInt()) }
             update(state.position) { this.marker.position = it }
             update(rotation) { this.marker.rotate = it }
-//            update(snippet) {
+            update(snippet) {
 //                this.marker.snippet = it
-//                if (this.marker.isInfoWindowShown) {
-//                    this.marker.showInfoWindow()
-//                }
-//            }
+                if (this.marker.isInfoWindowEnabled) {
+                    this.marker.showInfoWindow()
+                }
+            }
 //            update(tag) { this.marker.tag = it }
             update(title) {
                 this.marker.titleOptions = TitleOptions().text(it)
@@ -680,7 +700,7 @@ private fun MarkerImpl(
                 }
             }
             update(visible) { this.marker.isVisible = it }
-            update(zIndex) { this.marker.zIndex = it.toInt() }
+            update(zIndex) { this.marker.zIndex = it.roundToInt() }
         }
     )
 }
@@ -707,6 +727,7 @@ private fun MarkerImpl(
  * @param onInfoWindowClick a lambda invoked when the marker's info window is clicked
  * @param onInfoWindowClose a lambda invoked when the marker's info window is closed
  * @param onInfoWindowLongClick a lambda invoked when the marker's info window is long clicked
+ * @param icon  sets the icon for the marker
  * @param pinConfig the PinConfig object that will be used for the advanced marker
  * @param iconView the custom view to be used on the advanced marker
  * @param collisionBehavior the expected collision behavior
@@ -731,8 +752,9 @@ public fun AdvancedMarker(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
+    icon: BitmapDescriptor? = null,
 //    pinConfig: PinConfig? = null,
-//    iconView: View? = null,
+    iconView: View? = null,
 //    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED
 ) {
     AdvancedMarkerImpl(
@@ -753,8 +775,9 @@ public fun AdvancedMarker(
         onInfoWindowClick = onInfoWindowClick,
         onInfoWindowClose = onInfoWindowClose,
         onInfoWindowLongClick = onInfoWindowLongClick,
+        icon = icon,
 //        pinConfig = pinConfig,
-//        iconView = iconView,
+        iconView = iconView,
 //        collisionBehavior = collisionBehavior
     )
 }
@@ -784,6 +807,7 @@ public fun AdvancedMarker(
  * the entire info window. If this value is non-null, the value in infoContent will be ignored.
  * @param infoContent optional composable lambda expression for customizing
  * the info window's content. If this value is non-null, [infoWindow] must be null.
+ * @param icon sets the icon for the marker
  * @param pinConfig the PinConfig object that will be used for the advanced marker
  * @param iconView the custom view to be used on the advanced marker
  * @param collisionBehavior the expected collision behavior
@@ -810,8 +834,9 @@ private fun AdvancedMarkerImpl(
     onInfoWindowLongClick: (Marker) -> Unit = {},
     infoWindow: (@Composable (Marker) -> Unit)? = null,
     infoContent: (@Composable (Marker) -> Unit)? = null,
+    icon: BitmapDescriptor? = null,
 //    pinConfig: PinConfig? = null,
-//    iconView: View? = null,
+    iconView: View? = null,
 //    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED
 ) {
 
@@ -823,23 +848,31 @@ private fun AdvancedMarkerImpl(
             val advancedMarkerOptions = AdvancedMarkerOptions()
                 .position(state.position)
 //                .collisionBehavior(collisionBehavior)
-//            if (iconView != null) {
-//                advancedMarkerOptions.icon(iconView)
+
+            // Determine the icon for the marker in order of precedence:
+            // 1. Use iconView if provided (takes full precedence and overrides all).
+            // 2. If no iconView, use pinConfig to generate a BitmapDescriptor.
+            // 3. If neither iconView nor pinConfig are available, fall back to the raw icon.
+
+            if (iconView != null) {
+                advancedMarkerOptions.icon(BitmapDescriptorFactory.fromView(iconView))
 //            } else if (pinConfig != null) {
 //                advancedMarkerOptions.icon(BitmapDescriptorFactory.fromPinConfig(pinConfig))
-//            }
+            } else if (icon != null) {
+                advancedMarkerOptions.icon(icon)
+            }
 //            advancedMarkerOptions.contentDescription(contentDescription)
             advancedMarkerOptions.alpha(alpha)
             advancedMarkerOptions.anchor(anchor.x, anchor.y)
             advancedMarkerOptions.draggable(draggable)
             advancedMarkerOptions.flat(flat)
-            advancedMarkerOptions.anchor(infoWindowAnchor.x, infoWindowAnchor.y)
+//            advancedMarkerOptions.anchor(infoWindowAnchor.x, infoWindowAnchor.y)
             advancedMarkerOptions.position(state.position)
             advancedMarkerOptions.rotate(rotation)
 //            advancedMarkerOptions.snippet(snippet)
             advancedMarkerOptions.title(title)
             advancedMarkerOptions.visible(visible)
-            advancedMarkerOptions.zIndex(zIndex.toInt())
+            advancedMarkerOptions.zIndex(zIndex.roundToInt())
             val marker = mapApplier?.map?.addOverlay(advancedMarkerOptions) as? Marker
                 ?: error("Error adding marker")
 //            marker.tag = tag
@@ -867,15 +900,15 @@ private fun AdvancedMarkerImpl(
             update(anchor) { this.marker.setAnchor(it.x, it.y) }
             update(draggable) { this.marker.isDraggable = it }
             update(flat) { this.marker.isFlat = it }
-            update(infoWindowAnchor) { this.marker.setAnchor(it.x, it.y) }
+            update(infoWindowAnchor) { this.marker.updateInfoWindowYOffset(it.y.roundToInt()) }
             update(state.position) { this.marker.position = it }
             update(rotation) { this.marker.rotate = it }
-//            update(snippet) {
+            update(snippet) {
 //                this.marker.snippet = it
-//                if (this.marker.isInfoWindowShown) {
-//                    this.marker.showInfoWindow()
-//                }
-//            }
+                if (this.marker.isInfoWindowEnabled) {
+                    this.marker.showInfoWindow()
+                }
+            }
 //            update(tag) { this.marker.tag = it }
             update(title) {
                 this.marker.titleOptions = TitleOptions().text(it)
@@ -892,9 +925,14 @@ private fun AdvancedMarkerImpl(
 //                    })
 //                }
 //            }
+            update(icon) {
+                if (iconView == null) {
+                    this.marker.icon = it
+                }
+            }
 
             update(visible) { this.marker.isVisible = it }
-            update(zIndex) { this.marker.zIndex = it.toInt() }
+            update(zIndex) { this.marker.zIndex = it.roundToInt() }
         }
     )
 }

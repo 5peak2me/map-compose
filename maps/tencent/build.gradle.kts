@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-parcelize")
 }
@@ -57,11 +57,11 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
     }
-    @OptIn(ExperimentalAbiValidation::class)
-    abiValidation {
-        // Use the set() function to ensure compatibility with older Gradle versions
-        enabled.set(true)
-    }
+//    @OptIn(ExperimentalAbiValidation::class)
+//    abiValidation {
+//        // Use the set() function to ensure compatibility with older Gradle versions
+//        enabled.set(true)
+//    }
 }
 
 composeCompiler {
@@ -93,7 +93,7 @@ dependencies {
 //    implementation(libs.androidx.appcompat)
 //    implementation(libs.material)
     testImplementation(libs.junit)
-    testImplementation(kotlin("test"))
+//    testImplementation(kotlin("test"))
     testImplementation(libs.mockito)
     testImplementation(libs.mockitoInline)
     testImplementation(libs.mockitoKotlin)

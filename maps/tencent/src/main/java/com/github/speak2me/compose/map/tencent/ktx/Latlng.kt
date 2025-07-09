@@ -17,8 +17,15 @@
 
 package com.github.speak2me.compose.map.tencent.ktx
 
+import android.location.Location
 import com.tencent.map.geolocation.TencentLocationUtils
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng
+
+public fun LatLng.toLocation(): Location = Location("tencent-map-compose").also {
+    it.latitude = latitude
+    it.longitude = longitude
+    it.altitude = altitude
+}
 
 public operator fun LatLng.minus(distanceOf: LatLng): Double =
     TencentLocationUtils.distanceBetween(latitude, longitude, distanceOf.latitude, distanceOf.longitude)

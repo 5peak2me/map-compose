@@ -95,11 +95,7 @@ public fun TileOverlay(
 //                visible(visible)
                 zIndex(zIndex.toInt())
             } ?: error("Error adding tile overlay")
-            TileOverlayNode(
-                tileOverlay,
-                state,
-                onClick
-            )
+            TileOverlayNode(tileOverlay, state, onClick)
         },
         update = {
             update(onClick) { this.onTileOverlayClick = it }

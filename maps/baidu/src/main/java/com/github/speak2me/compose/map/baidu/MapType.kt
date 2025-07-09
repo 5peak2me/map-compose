@@ -23,9 +23,7 @@ import com.baidu.mapapi.map.BaiduMap
  */
 @Immutable
 public enum class MapType(public val value: Int) {
+    NONE(BaiduMap.MAP_TYPE_NONE),
     NORMAL(BaiduMap.MAP_TYPE_NORMAL),
     SATELLITE(BaiduMap.MAP_TYPE_SATELLITE),
-//    NIGHT(BaiduMap.MAP_TYPE_NIGHT),
-//    NAVI(BaiduMap.MAP_TYPE_NAVI),
-//    BUS(BaiduMap.MAP_TYPE_BUS);
 }

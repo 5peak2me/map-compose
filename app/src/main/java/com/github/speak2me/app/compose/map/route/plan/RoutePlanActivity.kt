@@ -19,6 +19,7 @@ class RoutePlanActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 val navController = rememberNavController()
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
                 NavHost(
                     navController = navController,
                     startDestination = "map"
@@ -45,7 +46,8 @@ class RoutePlanActivity : ComponentActivity() {
                     composable<Search> {
                         SearchScreen(onBackClick = navController::popBackStack) {
                             navController.previousBackStackEntry?.savedStateHandle?.set(KEY_MAP_LOCATION, it)
-                            navController.popBackStack()
+//                            navController.popBackStack()
+                            navController.popBackStack("map", inclusive = false)
                         }
                     }
                 }

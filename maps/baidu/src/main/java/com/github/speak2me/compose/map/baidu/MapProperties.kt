@@ -15,9 +15,9 @@
  */
 package com.github.speak2me.compose.map.baidu
 
-import com.baidu.mapapi.map.MapCustomStyleOptions as MapStyleOptions
 import com.baidu.mapapi.model.LatLngBounds
 import java.util.Objects
+import com.baidu.mapapi.map.MapCustomStyleOptions as MapStyleOptions
 
 /**
  * Equivalent to [MapProperties] with default values.
@@ -39,8 +39,9 @@ public class MapProperties(
     public val latLngBoundsForCameraTarget: LatLngBounds? = null,
     public val mapStyleOptions: MapStyleOptions? = null,
     public val mapType: MapType = MapType.NORMAL,
-    public val maxZoomPreference: Float = 21.0f,
-    public val minZoomPreference: Float = 3.0f,
+    public val logoPosition: LogoPosition = LogoPosition.LEFT_BOTTOM,
+    public val maxZoomPreference: Float = 22.0f,
+    public val minZoomPreference: Float = 4.0f,
 ) {
     override fun toString(): String = "MapProperties(" +
         "isBuildingEnabled=$isBuildingEnabled, isIndoorEnabled=$isIndoorEnabled, " +
@@ -57,6 +58,7 @@ public class MapProperties(
         latLngBoundsForCameraTarget == other.latLngBoundsForCameraTarget &&
         mapStyleOptions == other.mapStyleOptions &&
         mapType == other.mapType &&
+        logoPosition == other.logoPosition &&
         maxZoomPreference == other.maxZoomPreference &&
         minZoomPreference == other.minZoomPreference
 
@@ -68,6 +70,7 @@ public class MapProperties(
         latLngBoundsForCameraTarget,
         mapStyleOptions,
         mapType,
+        logoPosition,
         maxZoomPreference,
         minZoomPreference
     )
@@ -80,6 +83,7 @@ public class MapProperties(
         latLngBoundsForCameraTarget: LatLngBounds? = this.latLngBoundsForCameraTarget,
         mapStyleOptions: MapStyleOptions? = this.mapStyleOptions,
         mapType: MapType = this.mapType,
+        logoPosition: LogoPosition = this.logoPosition,
         maxZoomPreference: Float = this.maxZoomPreference,
         minZoomPreference: Float = this.minZoomPreference,
     ): MapProperties = MapProperties(
@@ -90,6 +94,7 @@ public class MapProperties(
         latLngBoundsForCameraTarget = latLngBoundsForCameraTarget,
         mapStyleOptions = mapStyleOptions,
         mapType = mapType,
+        logoPosition = logoPosition,
         maxZoomPreference = maxZoomPreference,
         minZoomPreference = minZoomPreference,
     )

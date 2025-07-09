@@ -83,6 +83,7 @@ internal class MapClickListenerNode<L : Any>(
 internal fun MapClickListenerUpdater() {
     // The mapClickListeners container object is not allowed to ever change
     val mapClickListeners = (currentComposer.applier as MapApplier).mapClickListeners
+    val map = (currentComposer.applier as MapApplier).map
 
     with(mapClickListeners) {
         ::indoorStateChangeListener.let { callback ->
@@ -151,7 +152,12 @@ internal fun MapClickListenerUpdater() {
                 BaiduMap::setOnMyLocationClickListener,
                 object : OnMyLocationClickListener {
                     override fun onMyLocationClick(): Boolean {
-                        callback()?.invoke(Location(null))
+                        val location = Location("tencent-map-compose").apply {
+                            latitude = map.locationData.latitude
+                            longitude = map.locationData.longitude
+                            altitude = map.locationData.accuracy.toDouble()
+                        }
+                        callback()?.invoke(location)
                         return true
                     }
                 }

@@ -124,10 +124,10 @@ public suspend inline fun BaiduMap.awaitMapLoad(): Unit = suspendCoroutine { con
  */
 public fun BaiduMap.cameraIdleEvents(): Flow<CameraEvent> = callbackFlow {
     setOnMapStatusChangeListener(object : BaiduMap.OnMapStatusChangeListener {
-        override fun onMapStatusChangeStart(p0: MapStatus?) {
+        override fun onMapStatusChangeStart(status: MapStatus?) {
         }
 
-        override fun onMapStatusChangeStart(p0: MapStatus?, p1: Int) {
+        override fun onMapStatusChangeStart(status: MapStatus?, p1: Int) {
         }
 
         override fun onMapStatusChange(status: MapStatus) {

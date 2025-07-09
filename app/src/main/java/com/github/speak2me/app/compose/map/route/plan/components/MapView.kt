@@ -3,7 +3,6 @@ package com.github.speak2me.app.compose.map.route.plan.components
 import android.graphics.Bitmap
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,8 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.CoordinateConverter
 import com.amap.api.maps.CoordinateConverter.CoordType
@@ -29,8 +29,9 @@ import com.amap.api.maps.model.LatLngBounds
 import com.amap.api.maps.model.Marker
 import com.amap.api.maps.model.PolylineOptions.LineCapType
 import com.amap.api.maps.model.PolylineOptions.LineJoinType
+import com.github.speak2me.app.compose.map.DisappearingScaleBar
 import com.github.speak2me.app.compose.map.R
-import com.github.speak2me.app.compose.map.SmartScaleBar
+import com.github.speak2me.app.compose.map.ScaleBar
 import com.github.speak2me.app.compose.map.route.plan.RoutePlan2UiState
 import com.github.speak2me.app.compose.map.route.plan.data.model.Waypoint
 import com.github.speak2me.app.compose.map.route.plan.ktx.isDarkMode
@@ -48,12 +49,17 @@ import com.github.speak2me.compose.map.amap.Polyline
 import com.github.speak2me.compose.map.amap.ktx.snapshot
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
 import com.github.speak2me.compose.map.amap.rememberUpdatedMarkerState
-import com.github.speak2me.compose.map.amap.widget.DisappearingScaleBar
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 private suspend fun CameraPositionState.zoomTo(location: LatLng) {
-    animate(CameraUpdateFactory.newLatLngZoom(location, 15f))
+    println("开始执行 zoomTo: $location")
+    try {
+        animate(CameraUpdateFactory.newLatLngZoom(location, 15f))
+        println("zoomTo 执行成功")
+    } catch (e: Exception) {
+        println("zoomTo 执行失败: ${e.message}")
+        e.printStackTrace()
+    }
 }
 
 private suspend fun CameraPositionState.bearing(bearing: Float = 0f) {
@@ -84,12 +90,11 @@ fun MapView(
     var showCompass by remember { mutableStateOf(false) }
     var satellite by remember { mutableStateOf(false) }
     var shouldLocateToTracks by remember { mutableStateOf(false) }
-    var shouldLocateToCurrent by remember { mutableStateOf(false) }
+    var shouldLocateToCurrent by remember { mutableStateOf(true) }
     var isSearchMarkerVisible by remember(uiState.searchLocation) { mutableStateOf(uiState.searchLocation != null) }
 
     // 记录地图容器的尺寸
-    var mapWidth by remember { mutableIntStateOf(0) }
-    var mapHeight by remember { mutableIntStateOf(0) }
+    var mapSize by remember { mutableStateOf(IntSize.Zero) }
 
     val cameraPositionState = rememberCameraPositionState()
 
@@ -101,11 +106,11 @@ fun MapView(
             }
     }
 
-    // 监听当前位置变化，自动移动地图到当前位置
+    // 监听当前位置变化，只在用户主动定位时移动地图到当前位置
     LaunchedEffect(uiState.currentLocation, shouldLocateToCurrent) {
-        uiState.currentLocation?.let { location ->
+        if (shouldLocateToCurrent && uiState.currentLocation != null) {
             scope.launch {
-                cameraPositionState.zoomTo(location)
+                cameraPositionState.zoomTo(uiState.currentLocation)
                 shouldLocateToCurrent = false
             }
         }
@@ -114,9 +119,8 @@ fun MapView(
     // 监听搜索marker变化，自动定位到搜索位置
     LaunchedEffect(uiState.searchLocation) {
         uiState.searchLocation?.let {
-            scope.launch {
-                cameraPositionState.zoomTo(it.convert(converter))
-            }
+            cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(it.convert(converter), 15f))
+            shouldLocateToCurrent = false
         }
     }
 
@@ -132,13 +136,9 @@ fun MapView(
                     .build()
                 // https://a.amap.com/lbs/static/unzip/Android_Map_Doc/3D/com/amap/api/maps/model/class-use/LatLngBounds.html
                 // 设置地图视野以显示整个轨迹
+                val size = mapSize / 2
                 cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngBounds(
-                        bounds,
-                        (mapWidth * 0.8).roundToInt(),
-                        mapHeight / 2,
-                        100
-                    ),
+                    CameraUpdateFactory.newLatLngBounds(bounds, size.width, size.height, 10),
                 )
 
                 // 重置标志
@@ -162,9 +162,8 @@ fun MapView(
     AMap(
         modifier = modifier
             .fillMaxSize()
-            .onSizeChanged { size ->
-                mapWidth = size.width
-                mapHeight = size.height
+            .onGloballyPositioned {
+                mapSize = it.size
             },
         cameraPositionState = cameraPositionState,
         uiSettings = uiSettings,
@@ -236,14 +235,14 @@ fun MapView(
     // 地图控制组件
     MapTitle(
         start = {
-//            DisappearingScaleBar(
-//                modifier = Modifier.align(Alignment.CenterStart),
-//                cameraPositionState = cameraPositionState
-//            )
-            SmartScaleBar(
+            DisappearingScaleBar(
                 modifier = Modifier.align(Alignment.CenterStart),
-                cameraPositionState = cameraPositionState,
+                cameraPositionState = cameraPositionState
             )
+//            ScaleBar(
+//                modifier = Modifier.align(Alignment.CenterStart),
+//                cameraPositionState = cameraPositionState,
+//            )
         },
         onClick = {}
     )
@@ -323,18 +322,10 @@ private fun Polyline(positions: List<LatLng>, color: Color, width: Float) {
 @Composable
 private fun Tracks(points: List<LatLng>) {
     if (points.size >= 2) {
-        Marker(
-            position = points.first(),
-            tag = "start",
-            drawable = R.drawable.route_ic_point_start,
-        )
+        Marker(position = points.first(), tag = "start", drawable = R.drawable.route_ic_point_start)
         Polyline(positions = points, color = Color.White, width = 24f)
         Polyline(positions = points, color = Color(0xFFFF3366), width = 16f)
-        Marker(
-            position = points.last(),
-            tag = "end",
-            drawable = R.drawable.route_ic_point_end,
-        )
+        Marker(position = points.last(), tag = "end", drawable = R.drawable.route_ic_point_end)
     }
 }
 
@@ -357,7 +348,6 @@ private fun Screenshot(uiState: RoutePlan2UiState, onScreenshotTaken: (Bitmap?) 
     @OptIn(MapsComposeExperimentalApi::class)
     MapEffect(uiState) { map ->
         if (uiState.shouldTakeScreenshot) {
-//            map.mapScreenMarkers.removeAll { it.`object` == null }
             map.mapScreenMarkers.filter { it.`object` == null }.forEach(Marker::remove)
             map.snapshot { bitmap ->
                 onScreenshotTaken(bitmap)

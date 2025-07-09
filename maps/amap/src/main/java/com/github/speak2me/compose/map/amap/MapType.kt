@@ -27,5 +27,6 @@ public enum class MapType(public val value: Int) {
     SATELLITE(AMap.MAP_TYPE_SATELLITE),
     NIGHT(AMap.MAP_TYPE_NIGHT),
     NAVI(AMap.MAP_TYPE_NAVI),
-    BUS(AMap.MAP_TYPE_BUS);
+    BUS(AMap.MAP_TYPE_BUS),
+    NAVI_NIGHT(AMap.MAP_TYPE_NAVI_NIGHT);
 }

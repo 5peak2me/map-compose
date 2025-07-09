@@ -196,7 +196,6 @@ private fun PolylineImpl(
 //                endCap(endCap)
                 lineCapType(lineCapType)
                 setDottedLine(isDottedLine)
-                dottedLineType = dottedLineType
                 geodesic(geodesic)
                 lineJoinType(lineJoinType)
                 colorValues(pattern)
@@ -216,9 +215,9 @@ private fun PolylineImpl(
 //            update(clickable) { this.polyline.isClickable = it }
             update(color) { this.polyline.color = it.toArgb() }
 //            update(endCap) { this.polyline.endCap = it }
-            update(geodesic) { this.polyline.isGeodesic = it }
-            set(isDottedLine) { this.polyline.isDottedLine = it }
             update(lineCapType) { this.polyline.options.lineCapType(it) }
+            update(geodesic) { this.polyline.isGeodesic = it }
+            update(isDottedLine) { this.polyline.isDottedLine = it }
             update(lineJoinType) { this.polyline.options.lineJoinType(it) }
             update(pattern) { this.polyline.options.colorValues(it) }
 //            update(startCap) { this.polyline.startCap = it }

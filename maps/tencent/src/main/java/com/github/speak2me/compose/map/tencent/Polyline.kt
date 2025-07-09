@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.toArgb
 import com.github.speak2me.compose.map.tencent.ktx.addPolyline
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng
 import com.tencent.tencentmap.mapsdk.maps.model.Polyline
+import com.tencent.tencentmap.mapsdk.maps.model.PolylineOptions
+import kotlin.math.roundToInt
 
 internal class PolylineNode(
     val polyline: Polyline,
@@ -57,8 +59,10 @@ public fun Polyline(
     clickable: Boolean = false,
     color: Color = Color.Black,
 //    endCap: Cap = ButtCap(),
+    lineCap: Boolean = true,
     geodesic: Boolean = false,
 //    jointType: Int = JointType.DEFAULT,
+    lineJoinType: Int = PolylineOptions.LineType.LINE_TYPE_IMAGEINARYLINE,
     pattern: List<Int>? = null,
 //    startCap: Cap = ButtCap(),
     tag: Any? = null,
@@ -72,8 +76,10 @@ public fun Polyline(
         clickable = clickable,
         color = color,
 //        endCap = endCap,
+        lineCap = lineCap,
         geodesic = geodesic,
 //        jointType = jointType,
+        lineJoinType = lineJoinType,
         pattern = pattern,
 //        startCap = startCap,
         tag = tag,
@@ -194,7 +200,7 @@ private fun PolylineImpl(
 //                startCap(startCap)
                 visible(visible)
                 width(width)
-                zIndex(zIndex.toInt())
+                zIndex(zIndex.roundToInt())
             } ?: error("Error adding Polyline")
             polyline.tag = tag
             PolylineNode(polyline, onClick)
@@ -208,7 +214,7 @@ private fun PolylineImpl(
             update(color) { this.polyline.color = it.toArgb() }
 //            update(endCap) { this.polyline.endCap = it }
             update(lineCap) { this.polyline.polylineOptions.lineCap(it) }
-//            update(geodesic) { this.polyline.isGeodesic = it }
+//            update(geodesic) { this.polyline.polylineOptions.geodesic(it) }
 //            update(jointType) { this.polyline.jointType = it }
             update(lineJoinType) { this.polyline.polylineOptions.lineType(it) }
             update(pattern) { this.polyline.pattern(it) }
@@ -216,7 +222,7 @@ private fun PolylineImpl(
             update(tag) { this.polyline.tag = it }
             update(visible) { this.polyline.isVisible = it }
             update(width) { this.polyline.width = it }
-            update(zIndex) { this.polyline.zIndex = it.toInt() }
+            update(zIndex) { this.polyline.zIndex = it.roundToInt() }
         }
     )
 }

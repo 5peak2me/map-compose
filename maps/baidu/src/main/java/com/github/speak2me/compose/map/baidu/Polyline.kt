@@ -21,7 +21,6 @@ import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.baidu.mapapi.map.Polyline
-import com.baidu.mapapi.map.PolylineDottedLineType
 import com.baidu.mapapi.map.PolylineOptions.LineCapType
 import com.baidu.mapapi.map.PolylineOptions.LineJoinType
 import com.baidu.mapapi.model.LatLng
@@ -60,8 +59,10 @@ public fun Polyline(
     clickable: Boolean = false,
     color: Color = Color.Black,
 //    endCap: Cap = ButtCap(),
+    lineCapType: LineCapType = LineCapType.LineCapButt,
     geodesic: Boolean = false,
-    jointType: LineJoinType = LineJoinType.LineJoinMiter,
+//    jointType: Int = JointType.DEFAULT,
+    lineJoinType: LineJoinType = LineJoinType.LineJoinMiter,
 //    pattern: List<PatternItem>? = null,
 //    startCap: Cap = ButtCap(),
     tag: Any? = null,
@@ -75,8 +76,10 @@ public fun Polyline(
         clickable = clickable,
         color = color,
 //        endCap = endCap,
+        lineCapType = lineCapType,
         geodesic = geodesic,
-        jointType = jointType,
+//        jointType = jointType,
+        lineJoinType = lineJoinType,
 //        pattern = pattern,
 //        startCap = startCap,
         tag = tag,
@@ -113,7 +116,8 @@ public fun Polyline(
 //    endCap: Cap = ButtCap(),
     lineCapType: LineCapType = LineCapType.LineCapButt,
     geodesic: Boolean = false,
-    jointType: LineJoinType = LineJoinType.LineJoinMiter,
+//    jointType: Int = JointType.DEFAULT,
+    lineJoinType: LineJoinType = LineJoinType.LineJoinMiter,
 //    pattern: List<PatternItem>? = null,
 //    startCap: Cap = ButtCap(),
     tag: Any? = null,
@@ -129,7 +133,8 @@ public fun Polyline(
 //        endCap = endCap,
         lineCapType = lineCapType,
         geodesic = geodesic,
-        jointType = jointType,
+//        jointType = jointType,
+        lineJoinType = lineJoinType,
 //        pattern = pattern,
 //        startCap = startCap,
 //        tag = tag,
@@ -168,9 +173,9 @@ private fun PolylineImpl(
 //    endCap: Cap = ButtCap(),
     lineCapType: LineCapType = LineCapType.LineCapButt,
     isDottedLine: Boolean = false,
-    dottedLineType: PolylineDottedLineType = PolylineDottedLineType.DOTTED_LINE_CIRCLE_RECTANGLE,
     geodesic: Boolean = false,
-    jointType: LineJoinType = LineJoinType.LineJoinMiter,
+//    jointType: Int = JointType.DEFAULT,
+    lineJoinType: LineJoinType = LineJoinType.LineJoinMiter,
 //    pattern: List<PatternItem>? = null,
 //    startCap: Cap = ButtCap(),
     tag: Any? = null,
@@ -189,10 +194,9 @@ private fun PolylineImpl(
                 color(color.toArgb())
 //                endCap(endCap)
                 lineCapType(lineCapType)
-                dottedLineType(dottedLineType)
 //                geodesic(geodesic)
 //                jointType(jointType)
-                lineJoinType(jointType)
+                lineJoinType(lineJoinType)
 //                pattern(pattern)
 //                startCap(startCap)
                 visible(visible)
@@ -212,12 +216,13 @@ private fun PolylineImpl(
 //            update(endCap) { this.polyline.endCap = it }
             update(geodesic) { this.polyline.isGeodesic = it }
             update(isDottedLine) { this.polyline.isDottedLine = it }
-            update(jointType) { this.polyline.lineJoinType = it }
+            update(lineCapType) { this.polyline.lineCapType = it }
+            update(lineJoinType) { this.polyline.lineJoinType = it }
 //            update(pattern) { this.polyline.pattern = it }
 //            update(startCap) { this.polyline.startCap = it }
 //            update(tag) { this.polyline.tag = it }
             update(visible) { this.polyline.isVisible = it }
-            update(width) { this.polyline.width = it.toInt() }
+            update(width) { this.polyline.width = it }
             update(zIndex) { this.polyline.zIndex = it.toInt() }
         }
     )

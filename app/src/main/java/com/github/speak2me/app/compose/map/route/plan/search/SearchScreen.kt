@@ -92,7 +92,7 @@ private fun SearchScreen(
             SearchUiState.Empty -> EmptyView()
             SearchUiState.Loading -> Loading()
             is SearchUiState.Success -> {
-                LocalSoftwareKeyboardController.current?.hide()
+//                LocalSoftwareKeyboardController.current?.hide()
                 LazyColumn {
                     itemsIndexed(uiState.data, key = { index, item -> "${item}_$index" }) { index, item ->
                         SearchItem(
@@ -162,8 +162,8 @@ private fun TitleBar(
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboard?.show()
+//        focusRequester.requestFocus()
+//        keyboard?.show()
     }
     Row(modifier = Modifier.padding(start = 12.dp, end = 16.dp, bottom = 8.dp, top = 6.dp)) {
         IconButton(onClick = onBackClick) {

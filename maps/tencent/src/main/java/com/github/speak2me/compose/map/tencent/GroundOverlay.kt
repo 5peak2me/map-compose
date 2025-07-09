@@ -25,6 +25,7 @@ import com.tencent.tencentmap.mapsdk.maps.model.GroundOverlay
 import com.tencent.tencentmap.mapsdk.maps.model.GroundOverlayOptions
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng
 import com.tencent.tencentmap.mapsdk.maps.model.LatLngBounds
+import kotlin.math.roundToInt
 
 internal class GroundOverlayNode(
     val groundOverlay: GroundOverlay,
@@ -100,7 +101,7 @@ public fun GroundOverlay(
                 position(position)
                 alpha(transparency)
                 visible(visible)
-                zIndex(zIndex.toInt())
+                zIndex(zIndex.roundToInt())
             } ?: error("Error adding ground overlay")
 //            groundOverlay.tag = tag
             GroundOverlayNode(groundOverlay, onClick)
@@ -115,7 +116,7 @@ public fun GroundOverlay(
 //            update(tag) { this.groundOverlay.tag = it }
             update(transparency) { this.groundOverlay.setAlpha(it) }
             update(visible) { this.groundOverlay.setVisibility(it) }
-            update(zIndex) { this.groundOverlay.setZindex(it.toInt()) }
+            update(zIndex) { this.groundOverlay.setZindex(it.roundToInt()) }
         }
     )
 }

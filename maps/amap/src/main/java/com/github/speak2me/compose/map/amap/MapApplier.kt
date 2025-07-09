@@ -74,30 +74,6 @@ internal class MapApplier(
     }
 
     internal fun attachClickListeners() {
-//        map.setOnCircleClickListener { circle ->
-//            decorations.findInputCallback<CircleNode, Circle, Unit>(
-//                nodeMatchPredicate = { it.circle == circle },
-//                marker = circle,
-//                nodeInputCallback = { onCircleClick },
-//                inputHandlerCallback = { onCircleClick }
-//            )
-//        }
-//        map.setOnGroundOverlayClickListener { groundOverlay ->
-//            decorations.findInputCallback<GroundOverlayNode, GroundOverlay, Unit>(
-//                nodeMatchPredicate = { it.groundOverlay == groundOverlay },
-//                nodeInputCallback = { onGroundOverlayClick },
-//                marker = groundOverlay,
-//                inputHandlerCallback = { onGroundOverlayClick }
-//            )
-//        }
-//        map.setOnPolygonClickListener { polygon ->
-//            decorations.findInputCallback<PolygonNode, Polygon, Unit>(
-//                nodeMatchPredicate = { it.polygon == polygon },
-//                nodeInputCallback = { onPolygonClick },
-//                marker = polygon,
-//                inputHandlerCallback = { onPolygonClick }
-//            )
-//        }
         map.setOnPolylineClickListener { polyline ->
             decorations.findInputCallback<PolylineNode, Polyline, Unit>(
                 nodeMatchPredicate = { it.polyline == polyline },
@@ -124,22 +100,6 @@ internal class MapApplier(
                 inputHandlerCallback = { onInfoWindowClick }
             )
         }
-//        map.setOnInfoWindowCloseListener { marker ->
-//            decorations.findInputCallback<MarkerNode, Marker, Unit>(
-//                nodeMatchPredicate = { it.marker == marker },
-//                marker = marker,
-//                nodeInputCallback = { onInfoWindowClose },
-//                inputHandlerCallback = { onInfoWindowClose }
-//            )
-//        }
-//        map.setOnInfoWindowLongClickListener { marker ->
-//            decorations.findInputCallback<MarkerNode, Marker, Unit>(
-//                nodeMatchPredicate = { it.marker == marker },
-//                marker = marker,
-//                nodeInputCallback = { onInfoWindowLongClick },
-//                inputHandlerCallback = { onInfoWindowLongClick }
-//            )
-//        }
         map.setOnMarkerDragListener(object : AMap.OnMarkerDragListener {
             // We update MarkerState isDragging & position properties in a specific well-defined
             // order: MarkerState.position is never updated by us unless

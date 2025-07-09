@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("elf-16k-alignment")
     repositories {
         google {
             content {

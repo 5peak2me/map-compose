@@ -24,8 +24,11 @@ import com.amap.api.maps.LocationSource
 import com.amap.api.maps.LocationSource.OnLocationChangedListener
 import com.amap.api.maps.model.CameraPosition
 import com.amap.api.maps.model.LatLng
+import com.amap.api.maps.model.MyLocationStyle
 import com.github.speak2me.compose.map.amap.AMap
+import com.github.speak2me.compose.map.amap.MapEffect
 import com.github.speak2me.compose.map.amap.MapProperties
+import com.github.speak2me.compose.map.amap.MapsComposeExperimentalApi
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -113,7 +116,12 @@ class LocationTrackingActivity : ComponentActivity() {
                     onMyLocationButtonClick = {  Log.d(TAG,"Overriding the onMyLocationButtonClick with this Log"); true },
                     locationSource = locationSource,
                     properties = mapProperties
-                )
+                ) {
+                    @OptIn(MapsComposeExperimentalApi::class)
+                    MapEffect {
+                        it.isMyLocationEnabled = true
+                    }
+                }
                 if (!isMapLoaded) {
                     AnimatedVisibility(
                         modifier = Modifier

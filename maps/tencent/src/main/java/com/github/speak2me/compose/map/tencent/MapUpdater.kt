@@ -15,7 +15,6 @@
  */
 package com.github.speak2me.compose.map.tencent
 
-import android.annotation.SuppressLint
 import android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -82,6 +81,7 @@ internal class MapPropertiesNode(
 //        }
         map.setOnCameraChangeListener(object : TencentMap.OnCameraChangeListener {
             override fun onCameraChange(position: CameraPosition) {
+                cameraPositionState.cameraMoveStartedReason = CameraMoveStartedReason.fromInt(position.triggers.firstOrNull { position.changedReason == it.name }?.ordinal ?: 0)
                 cameraPositionState.isMoving = true
                 cameraPositionState.rawPosition = position.toComposeCameraPosition()
             }
@@ -110,8 +110,7 @@ public val DefaultMapContentPadding: PaddingValues = PaddingValues()
 /**
  * Used to keep the primary map properties up to date. This should never leave the map composition.
  */
-@SuppressLint("MissingPermission")
-@Suppress("NOTHING_TO_INLINE")
+@Suppress("NOTHING_TO_INLINE", "DEPRECATION")
 @Composable
 internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdaterState) {
     val map = (currentComposer.applier as MapApplier).map
@@ -156,18 +155,21 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
         set(mapProperties.mapType) { map.mapType = it.value }
         set(mapProperties.maxZoomPreference) { map.setMaxZoomLevel(it.toInt()) }
         set(mapProperties.minZoomPreference) {  map.setMinZoomLevel(it.toInt()) }
-//        set(mapColorScheme) {
-//            if (it != null) {
-//                map.mapColorScheme = it
-//            }
-//        }
+        set(mapColorScheme) {
+            if (it != null) {
+                map.mapType = it
+            }
+        }
 
         set(mapUiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
         set(mapUiSettings.indoorLevelPickerEnabled) { map.uiSettings.isIndoorLevelPickerEnabled = it }
 //        set(mapUiSettings.mapToolbarEnabled) { map.uiSettings.isMapToolbarEnabled = it }
         set(mapUiSettings.myLocationButtonEnabled) { map.uiSettings.isMyLocationButtonEnabled = it }
         set(mapUiSettings.rotationGesturesEnabled) { map.uiSettings.isRotateGesturesEnabled = it }
-        set(mapUiSettings.scaleControlsEnabled) { map.uiSettings.isScaleViewEnabled = false }
+        set(mapUiSettings.scaleControlsEnabled) {
+            map.uiSettings.isScaleViewEnabled = it
+            map.uiSettings.setScaleViewFadeEnable(it)
+        }
         set(mapUiSettings.scrollGesturesEnabled) { map.uiSettings.isScrollGesturesEnabled = it }
 //        set(mapUiSettings.scrollGesturesEnabledDuringRotateOrZoom) { map.uiSettings.isScrollGesturesEnabledDuringRotateOrZoom = it }
         set(mapUiSettings.tiltGesturesEnabled) { map.uiSettings.isTiltGesturesEnabled = it }

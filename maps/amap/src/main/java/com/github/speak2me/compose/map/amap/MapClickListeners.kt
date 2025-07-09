@@ -127,22 +127,6 @@ internal fun MapClickListenerUpdater() {
             )
         }
 
-//        ::onMyLocationButtonClick.let { callback ->
-//            MapClickListenerComposeNode(
-//                callback,
-//                AMap::setOnMyLocationButtonClickListener,
-//                OnMyLocationButtonClickListener { callback()?.invoke() ?: false }
-//            )
-//        }
-
-//        ::onMyLocationClick.let { callback ->
-//            MapClickListenerComposeNode(
-//                callback,
-//                AMap::setOnMyLocationClickListener,
-//                OnMyLocationClickListener { callback()?.invoke(it) }
-//            )
-//        }
-
         ::onPOIClick.let { callback ->
             MapClickListenerComposeNode(
                 callback,

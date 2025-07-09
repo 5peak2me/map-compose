@@ -15,7 +15,6 @@
  */
 package com.github.speak2me.compose.map.tencent
 
-import android.os.Parcelable
 import androidx.annotation.UiThread
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -37,8 +36,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import java.lang.Integer.MAX_VALUE
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -222,7 +219,7 @@ public class CameraPositionState private constructor(
 
                             override fun onCancelLocked() {
                                 continuation.resumeWithException(
-                                    CancellationException("Animation cancelled"),
+                                    CancellationException("Animation cancelled")
                                 )
                             }
                         }

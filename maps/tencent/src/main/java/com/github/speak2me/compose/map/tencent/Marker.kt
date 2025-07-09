@@ -16,9 +16,19 @@
 package com.github.speak2me.compose.map.tencent
 
 import android.view.View
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ComposeNode
+import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.currentComposer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.StateFactoryMarker
 import androidx.compose.ui.geometry.Offset
 import com.github.speak2me.compose.map.tencent.ktx.addMarker
@@ -27,8 +37,8 @@ import com.tencent.tencentmap.mapsdk.maps.model.BitmapDescriptorFactory
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng
 import com.tencent.tencentmap.mapsdk.maps.model.Marker
 import com.tencent.tencentmap.mapsdk.maps.model.MarkerCollisionRelation
-import kotlin.math.roundToInt
 import com.tencent.tencentmap.mapsdk.maps.model.MarkerOptions as AdvancedMarkerOptions
+import kotlin.math.roundToInt
 
 internal class MarkerNode(
     val compositionContext: CompositionContext,
@@ -186,13 +196,13 @@ public class MarkerState private constructor(position: LatLng) {
             "so it will be changed or removed.",
     replaceWith = ReplaceWith(
         expression = """
-            val markerState = rememberSaveable(key = key, saver = MarkerState.Saver) {
-                MarkerState(position)
-            }
+rememberSaveable(key = key, saver = MarkerState.Saver) {
+    MarkerState(position)
+}
         """
     )
 )
-public fun rememberUpdatedMarkerState(
+public fun rememberMarkerState(
     key: String? = null,
     position: LatLng = LatLng(0.0, 0.0)
 ): MarkerState = rememberSaveable(key = key, saver = MarkerState.Saver) {

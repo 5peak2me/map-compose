@@ -17,6 +17,7 @@ package com.github.speak2me.compose.map.amap
 
 import android.content.ComponentCallbacks
 import android.content.ComponentCallbacks2
+import android.content.Context
 import android.content.res.Configuration
 import android.location.Location
 import android.os.Bundle
@@ -52,6 +53,7 @@ import com.amap.api.maps.model.Poi as PointOfInterest
 import com.github.speak2me.compose.map.amap.ktx.awaitMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
@@ -100,6 +102,7 @@ public fun AMap(
     onPOIClick: ((PointOfInterest) -> Unit)? = null,
     contentPadding: PaddingValues = DefaultMapContentPadding,
     mapColorScheme: ComposeMapColorScheme? = null,
+    mapViewFactory: (Context, AMapOptions) -> MapView = ::MapView,
     content: @Composable @AMapComposable () -> Unit = {},
 ) {
     // When in preview, early return a Box with the received modifier preserving layout
@@ -150,13 +153,17 @@ public fun AMap(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            MapView(context, aMapOptionsFactory()).also { mapView ->
-//                MapsApiSettings.addInternalUsageAttributionId(context, AttributionId.VALUE )
+            mapViewFactory(context, aMapOptionsFactory()).also { mapView ->
                 val componentCallbacks = object : ComponentCallbacks2 {
                     override fun onConfigurationChanged(newConfig: Configuration) {}
                     @Deprecated("Deprecated in Java", ReplaceWith("onTrimMemory(level)"))
-                    override fun onLowMemory() { mapView.onLowMemory() }
-                    override fun onTrimMemory(level: Int) { mapView.onLowMemory() }
+                    override fun onLowMemory() {
+                        mapView.onLowMemory()
+                    }
+
+                    override fun onTrimMemory(level: Int) {
+                        mapView.onLowMemory()
+                    }
                 }
                 context.registerComponentCallbacks(componentCallbacks)
 
@@ -217,7 +224,10 @@ private fun CoroutineScope.launchSubcomposition(
     content: @Composable @AMapComposable () -> Unit,
 ): Job {
     // Use [CoroutineStart.UNDISPATCHED] to kick off AMap loading immediately
-    return launch(start = CoroutineStart.UNDISPATCHED) {
+    return launch(
+        context = Dispatchers.Main,
+        start = CoroutineStart.UNDISPATCHED
+    ) {
         val map = mapView.awaitMap()
         val composition = Composition(
             applier = MapApplier(map, mapView, mapClickListeners),

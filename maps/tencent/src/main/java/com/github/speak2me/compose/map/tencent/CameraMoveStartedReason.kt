@@ -46,7 +46,7 @@ public enum class CameraMoveStartedReason(public val value: Int) {
          * See https://developers.google.com/android/reference/com/google/android/gms/maps/GoogleMap.OnCameraMoveStartedListener#constants.
          */
         public fun fromInt(value: Int): CameraMoveStartedReason {
-            return entries.firstOrNull { it.value == value } ?: return UNKNOWN
+            return values().firstOrNull { it.value == value } ?: return UNKNOWN
         }
     }
 }

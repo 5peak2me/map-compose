@@ -26,11 +26,12 @@ import com.tencent.tencentmap.mapsdk.maps.model.GroundOverlay
 import com.tencent.tencentmap.mapsdk.maps.model.Marker
 import com.tencent.tencentmap.mapsdk.maps.model.Polygon
 import com.tencent.tencentmap.mapsdk.maps.model.Polyline
+import com.tencent.tencentmap.mapsdk.maps.TencentMap.OnMarkerClickListener
 
 /**
  * A generic handler for map input.
  * Non-null lambdas will be invoked if no other node was able to handle that input.
- * For example, if [com.tencent.tencentmap.mapsdk.maps.TencentMap.OnMarkerClickListener.onMarkerClick] was invoked and no matching [MarkerNode]
+ * For example, if [OnMarkerClickListener.onMarkerClick] was invoked and no matching [MarkerNode]
  * was found, this [onMarkerClick] will be invoked.
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
