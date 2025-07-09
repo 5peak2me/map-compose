@@ -78,6 +78,10 @@ kotlin {
         // Must be explicitly enabled!
         languageSettings.enableLanguageFeature("ExplicitBackingFields")
     }
+    sourceSets.all {
+        // Must be explicitly enabled!
+        languageSettings.enableLanguageFeature("ExplicitBackingFields")
+    }
 }
 
 dependencies {
