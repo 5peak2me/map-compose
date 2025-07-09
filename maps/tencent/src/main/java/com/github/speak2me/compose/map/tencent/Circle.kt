@@ -24,6 +24,7 @@ import com.github.speak2me.compose.map.tencent.ktx.addCircle
 import com.github.speak2me.compose.map.tencent.ktx.model.circleOptions
 import com.tencent.tencentmap.mapsdk.maps.model.Circle
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng
+import kotlin.math.roundToInt
 
 internal class CircleNode(
     val circle: Circle,
@@ -77,7 +78,7 @@ public fun Circle(
                 pattern(strokePattern)
                 strokeWidth(strokeWidth)
                 visible(visible)
-                zIndex(zIndex.toInt())
+                zIndex(zIndex.roundToInt())
             } ?: error("Error adding circle")
             circle.tag = tag
             CircleNode(circle, onClick)
@@ -94,7 +95,7 @@ public fun Circle(
             update(strokeWidth) { this.circle.strokeWidth = it }
             update(tag) { this.circle.tag = it }
             update(visible) { this.circle.isVisible = it }
-            update(zIndex) { this.circle.zIndex = it.toInt()}
+            update(zIndex) { this.circle.zIndex = it.roundToInt()}
         }
     )
 }

@@ -55,6 +55,7 @@ public fun Circle(
     radius: Double = 10.0,
     strokeColor: Color = Color.Black,
 //    strokePattern: List<PatternItem>? = null,
+    strokeDottedLineType: Int = -1,
     strokeWidth: Float = 10f,
     tag: Any? = null,
     visible: Boolean = true,
@@ -71,6 +72,7 @@ public fun Circle(
                 radius(radius)
                 strokeColor(strokeColor.toArgb())
 //                strokePattern(strokePattern)
+                setStrokeDottedLineType(strokeDottedLineType)
                 strokeWidth(strokeWidth)
                 visible(visible)
                 zIndex(zIndex)
@@ -86,6 +88,7 @@ public fun Circle(
             update(fillColor) { this.circle.fillColor = it.toArgb() }
             update(radius) { this.circle.radius = it }
             update(strokeColor) { this.circle.strokeColor = it.toArgb() }
+            update(strokeDottedLineType) {this.circle.strokeDottedLineType = it }
 //            update(strokePattern) { this.circle.strokePattern = it }
             update(strokeWidth) { this.circle.strokeWidth = it }
 //            update(tag) { this.circle.tag = it }

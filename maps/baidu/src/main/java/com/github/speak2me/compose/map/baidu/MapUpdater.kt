@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.baidu.mapapi.map.BaiduMap
 import com.baidu.mapapi.map.CustomMapStyleCallBack
+import com.baidu.mapapi.map.LogoPosition
 import com.baidu.mapapi.map.MapStatus
 
 internal class MapPropertiesNode(
@@ -86,11 +87,13 @@ internal class MapPropertiesNode(
             }
 
             override fun onMapStatusChangeStart(status: MapStatus, reason: Int) {
-
+                cameraPositionState.cameraMoveStartedReason = CameraMoveStartedReason.fromInt(reason)
+                cameraPositionState.isMoving = true
+                cameraPositionState.rawPosition = status
             }
 
             override fun onMapStatusChange(status: MapStatus) {
-
+                cameraPositionState.rawPosition = status
             }
 
             override fun onMapStatusChangeFinish(status: MapStatus) {
@@ -166,16 +169,17 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
             mapView.setMapCustomStyleEnable(true)
         }
         set(mapProperties.mapType) { map.mapType = it.value }
+        set(mapProperties.logoPosition) { position -> mapView.logoPosition = LogoPosition.entries.firstOrNull { it.ordinal == position.value } }
         set(mapProperties.maxZoomPreference) { map.setMaxAndMinZoomLevel(it, map.minZoomLevel) }
         set(mapProperties.minZoomPreference) {  map.setMaxAndMinZoomLevel(map.maxZoomLevel, it) }
-//        set(mapColorScheme) {
-//            if (it != null) {
-//                map.mapColorScheme = it
-//            }
-//        }
+        set(mapColorScheme) {
+            if (it != null) {
+                map.mapType = it
+            }
+        }
 
         set(mapUiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
-//        set(mapUiSettings.indoorLevelPickerEnabled) { map.uiSettings.isIndoorSwitchEnabled = it }
+        set(mapUiSettings.indoorLevelPickerEnabled) { map.setIndoorEnable(it) }
 //        set(mapUiSettings.mapToolbarEnabled) { map.uiSettings.isMapToolbarEnabled = it }
 //        set(mapUiSettings.myLocationButtonEnabled) { map.uiSettings.isMyLocationButtonEnabled = it }
         set(mapUiSettings.rotationGesturesEnabled) { map.uiSettings.isRotateGesturesEnabled = it }

@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.amap.api.maps.AMap
 import com.amap.api.maps.model.CameraPosition
-import com.amap.api.maps.model.IndoorBuildingInfo
+import com.amap.api.maps.model.IndoorBuildingInfo as IndoorBuilding
 import com.amap.api.maps.model.LatLng
 import com.github.speak2me.compose.map.amap.AMap
 import com.github.speak2me.compose.map.amap.CameraPositionState
@@ -93,6 +92,7 @@ data class MapListItem(
     val id: MapItemId
 )
 
+// TODO: 有问题 
 private val allItems = countries.mapIndexed { index, country ->
     MapListItem(country.name, country.latLng, country.zoom, "MapInLazyColumn#$index")
 }
@@ -205,6 +205,7 @@ private fun MapCard(
     cameraPositionState: CameraPositionState,
     onMapLoaded: () -> Unit,
 ) {
+    println("MapCard")
     Card(
         Modifier.padding(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -224,7 +225,7 @@ private fun MapCard(
         }
 
         Box {
-           AMap(
+            AMap(
                modifier = Modifier.testTag("Map"),
                onMapClick = {
                    onMapClickCount++
@@ -239,6 +240,7 @@ private fun MapCard(
                onMapLoaded = {
                    onMapLoaded.invoke()
                    mapLoaded = true
+                   println("onMapLoaded")
                },
                indoorStateChangeListener = object : IndoorStateChangeListener {
                    override fun onIndoorBuildingFocused() {
@@ -248,7 +250,7 @@ private fun MapCard(
                        updateIndoorLevel()
                    }
 
-                   override fun onIndoorLevelActivated(building: IndoorBuildingInfo) {
+                   override fun onIndoorLevelActivated(building: IndoorBuilding) {
                        super.onIndoorLevelActivated(building)
                        activatedIndoorLevelInvocationCount++
                        updateIndoorLevel()
@@ -261,20 +263,23 @@ private fun MapCard(
 //                    buildingFocused = (aMap.focusedBuilding != null)
                }
            }
-
-//            AnimatedVisibility(!mapLoaded, enter = fadeIn(), exit = fadeOut()) {
-//                Box(
-//                    Modifier.fillMaxSize(),
-//                    contentAlignment = Alignment.Center
-//                ) {
-//                    CircularProgressIndicator()
-//                }
-//            }
+            Column {
+                AnimatedVisibility(visible = !mapLoaded, enter = fadeIn(), exit = fadeOut()) {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
 
             @Composable
             fun TextWithBackground(text: String, fontWeight: FontWeight = FontWeight.Medium) {
                 Text(
-                    modifier = Modifier.background(Color.White.copy(0.7f)).testTag(text),
+                    modifier = Modifier
+                        .background(Color.White.copy(0.7f))
+                        .testTag(text),
                     text = text,
                     fontWeight = fontWeight,
                     fontSize = 10.sp

@@ -31,7 +31,10 @@ import androidx.compose.runtime.Immutable
 @Immutable
 public enum class CameraMoveStartedReason(public val value: Int) {
     UNKNOWN(-2),
-    NO_MOVEMENT_YET(-1);
+    NO_MOVEMENT_YET(-1),
+    GESTURE(1),
+    API_ANIMATION(2),
+    DEVELOPER_ANIMATION(3);
 
     public companion object {
         /**

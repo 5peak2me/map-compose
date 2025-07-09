@@ -2,11 +2,25 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+//    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.secrets.gradle.plugin)
     id("kotlin-parcelize")
     kotlin("plugin.serialization") version "2.2.0"
+    id("elf-16k-alignment")
+}
+
+elfAlignment {
+    filter = false
+
+    maxAlign = 16384L
+
+    output {
+        csv = true
+        html = true
+        json = true
+        md = true
+    }
 }
 
 android {
@@ -19,6 +33,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a"/*, "armeabi-v7a"*/, "x86_64")
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,6 +72,11 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
+        freeCompilerArgs.add("-XXLanguage:+ExplicitBackingFields")
+    }
+    sourceSets.all {
+        // Must be explicitly enabled!
+        languageSettings.enableLanguageFeature("ExplicitBackingFields")
     }
 }
 
@@ -83,17 +106,20 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.material3)
 
     implementation(libs.androidx.navigation.compose)
-    
+
     // Accompanist Permissions
-    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation(libs.accompanist.permissions)
+    implementation(libs.androidx.viewpager2)
+    implementation(libs.androidx.constraintlayout)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

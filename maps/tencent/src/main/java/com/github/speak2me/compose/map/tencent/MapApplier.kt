@@ -164,7 +164,7 @@ internal class MapApplier(
                             markerState.dragState = DragState.START
                         }
                     },
-                    inputHandlerCallback = { onMarkerDragStart },
+                    inputHandlerCallback = { onMarkerDragStart }
                 )
             }
 

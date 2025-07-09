@@ -25,6 +25,7 @@ import com.github.speak2me.compose.map.tencent.ktx.model.polygonOptions
 import com.tencent.tencentmap.mapsdk.maps.model.LatLng
 import com.tencent.tencentmap.mapsdk.maps.model.Polygon
 import com.tencent.tencentmap.mapsdk.maps.model.PolylineOptions
+import kotlin.math.roundToInt
 
 internal class PolygonNode(
     val polygon: Polygon,
@@ -105,7 +106,7 @@ public fun Polygon(
             update(strokeWidth) { this.polygon.strokeWidth = it }
             update(tag) { this.polygon.tag = it }
             update(visible) { this.polygon.isVisible = it }
-            update(zIndex) { this.polygon.zIndex = it.toInt() }
+            update(zIndex) { this.polygon.zIndex = it.roundToInt() }
         }
     )
 }

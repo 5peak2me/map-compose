@@ -8,6 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.github.speak2me.app.compose.map.route.plan.search.Search
+import com.github.speak2me.app.compose.map.route.plan.search.SearchScreen
 import com.github.speak2me.app.compose.map.ui.theme.MapComposeTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,12 +20,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MapComposeTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                val navController = rememberNavController()
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                NavHost(
+                    navController = navController,
+                    startDestination = "map"
                 ) {
-                    val viewModel: MapElevationViewModel = viewModel()
-                    MapElevationScreen(viewModel = viewModel)
+                    composable("map") {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            val viewModel: MapElevationViewModel = viewModel()
+                            MapElevationScreen(viewModel = viewModel) {
+                                navController.navigate(Search(0.0, 0.0)) {
+                                    restoreState = true
+                                }
+                            }
+                        }
+                    }
+                    composable<Search> {
+                        SearchScreen(onBackClick = navController::popBackStack) {
+//                            navController.popBackStack("map", inclusive = false, saveState = false)
+                            navController.popBackStack("map", inclusive = false)
+//                            navController.popBackStack()
+                        }
+                    }
                 }
             }
         }

@@ -42,10 +42,34 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /**
+ * Creates and remembers a [CameraPositionState] using [rememberSaveable].
+ *
+ * The camera position state is saved across configuration changes and process death,
+ * ensuring the map retains its last position.
+ *
+ * @param init A lambda that is called when the [CameraPositionState] is first created to
+ * configure its initial state, such as its position or zoom level.
+ */
+@Composable
+public inline fun rememberCameraPositionState(
+    crossinline init: CameraPositionState.() -> Unit = {}
+): CameraPositionState = rememberSaveable(saver = CameraPositionState.Saver) {
+    CameraPositionState().apply(init)
+}
+
+/**
  * Create and [rememberSaveable] a [CameraPositionState] using [CameraPositionState.Saver].
  * [init] will be called when the [CameraPositionState] is first created to configure its
- * initial state.
+ * initial state. Remember that the camera state can be applied when the map has been
+ * loaded.
  */
+@Deprecated(
+    message = "The 'key' parameter is deprecated. Please use the new `rememberCameraPositionState` function without a key.",
+    replaceWith = ReplaceWith(
+        "rememberCameraPositionState(init)",
+        "com.google.maps.android.compose.rememberCameraPositionState"
+    )
+)
 @Composable
 public inline fun rememberCameraPositionState(
     key: String? = null,
@@ -118,7 +142,7 @@ public class CameraPositionState private constructor(
 
     // The map currently associated with this CameraPositionState.
     // Guarded by `lock`.
-    private var map: AMap? by mutableStateOf(null)
+    public var map: AMap? by mutableStateOf(null)
 
     // An action to run when the map becomes available or unavailable.
     // represents a mutually exclusive mutation to perform while holding `lock`.
@@ -182,7 +206,7 @@ public class CameraPositionState private constructor(
      * * [position] is set explicitly, e.g. `state.position = CameraPosition(...)`
      * * [animate] is called again before an earlier call to [animate] returns
      * * [move] is called
-     * * The calling job is [cancelled][Job.cancel] externally
+     * * The calling job is [cancelled][kotlinx.coroutines.Job.cancel] externally
      *
      * If this [CameraPositionState] is not currently bound to a [AMap] this call will
      * suspend until a map is bound and animation will begin.

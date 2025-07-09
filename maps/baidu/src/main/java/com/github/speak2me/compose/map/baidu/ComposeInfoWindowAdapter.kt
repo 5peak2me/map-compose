@@ -17,7 +17,6 @@ package com.github.speak2me.compose.map.baidu
 
 import android.view.View
 import androidx.compose.ui.platform.ComposeView
-import com.baidu.mapapi.map.BaiduMap
 import com.baidu.mapapi.map.InfoWindow
 import com.baidu.mapapi.map.InfoWindowAdapter
 import com.baidu.mapapi.map.MapView
@@ -28,7 +27,7 @@ import com.baidu.mapapi.map.Marker
  * info window.
  *
  * Note: As of version 18.0.2 of the Maps SDK, info windows are drawn by
- * creating a bitmap of the [View]s returned in the [BaiduMap.InfoWindowAdapter]
+ * creating a bitmap of the [View]s returned in the [InfoWindowAdapter]
  * interface methods. The returned views are never attached to a window,
  * instead, they are drawn to a bitmap canvas. This breaks the assumption
  * [ComposeView] makes where it must eventually be attached to a window. As a
@@ -68,7 +67,11 @@ internal class ComposeInfoWindowAdapter(
             setContent { infoWindow(marker) }
         }
         mapView.renderComposeViewOnce(view, parentContext = markerNode.compositionContext)
-        return marker.infoWindow
+        return InfoWindow(
+            view,
+            markerNode.marker.position,
+            markerNode.marker.extraInfo.getInt("infoWindowYOffset")
+        )
     }
 
 }

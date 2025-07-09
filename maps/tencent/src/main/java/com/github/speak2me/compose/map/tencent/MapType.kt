@@ -23,9 +23,12 @@ import com.tencent.tencentmap.mapsdk.maps.TencentMap
  */
 @Immutable
 public enum class MapType(public val value: Int) {
+    NONE(TencentMap.MAP_TYPE_NONE),
     NORMAL(TencentMap.MAP_TYPE_NORMAL),
     SATELLITE(TencentMap.MAP_TYPE_SATELLITE),
+    NEW_3D_IMMERSIVE(TencentMap.MAP_TYPE_NEW_3D_IMMERSIVE),
+    TRAFFIC_NAVI(TencentMap.MAP_TYPE_TRAFFIC_NAVI),
+    TRAFFIC_NIGHT(TencentMap.MAP_TYPE_TRAFFIC_NIGHT),
     NIGHT(TencentMap.MAP_TYPE_NIGHT),
-    NAVI(TencentMap.MAP_TYPE_NAVI),
-    BUS(TencentMap.MAP_TYPE_TRAFFIC_NAVI);
+    NAVI(TencentMap.MAP_TYPE_NAVI);
 }

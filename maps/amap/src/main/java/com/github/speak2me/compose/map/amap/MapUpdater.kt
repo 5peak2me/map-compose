@@ -26,10 +26,13 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.amap.api.maps.AMap
+//import com.amap.api.maps.MapView
+import com.amap.api.maps.TextureMapView as MapView
 import com.amap.api.maps.model.CameraPosition
 
 internal class MapPropertiesNode(
     val map: AMap,
+    val mapView: MapView,
     cameraPositionState: CameraPositionState,
     contentDescription: String?,
     var density: Density,
@@ -38,18 +41,19 @@ internal class MapPropertiesNode(
 ) : MapNode {
 
     init {
-        applyContentPadding(map, contentPadding)
+        map.accelerateNetworkInChinese(true)
+        applyContentPadding(mapView, contentPadding)
         // set camera position after padding for correct centering
         cameraPositionState.setMap(map)
-//        if (contentDescription != null) {
-//            map.setContentDescription(contentDescription)
-//        }
+        if (contentDescription != null) {
+            mapView.setContentDescription(contentDescription)
+        }
     }
 
     var contentDescription = contentDescription
         set(value) {
             field = value
-//            map.setContentDescription(contentDescription)
+            mapView.setContentDescription(contentDescription)
         }
 
     var cameraPositionState = cameraPositionState
@@ -61,23 +65,6 @@ internal class MapPropertiesNode(
         }
 
     override fun onAttached() {
-//        map.setOnCameraIdleListener {
-//            cameraPositionState.isMoving = false
-//            // setOnCameraMoveListener is only invoked when the camera position
-//            // is changed via .animate(). To handle updating state when .move()
-//            // is used, it's necessary to set the camera's position here as well
-//            cameraPositionState.rawPosition = map.cameraPosition
-//        }
-//        map.setOnCameraMoveCanceledListener {
-//            cameraPositionState.isMoving = false
-//        }
-//        map.setOnCameraMoveStartedListener {
-//            cameraPositionState.cameraMoveStartedReason = CameraMoveStartedReason.fromInt(it)
-//            cameraPositionState.isMoving = true
-//        }
-//        map.setOnCameraMoveListener {
-//            cameraPositionState.rawPosition = map.cameraPosition
-//        }
         map.setOnCameraChangeListener(object : AMap.OnCameraChangeListener {
             override fun onCameraChangeFinish(position: CameraPosition) {
                 cameraPositionState.isMoving = false
@@ -123,6 +110,7 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
         factory = {
             MapPropertiesNode(
                 map = map,
+                mapView = mapView,
                 contentDescription = contentDescription,
                 cameraPositionState = cameraPositionState,
                 density = density,
@@ -136,35 +124,33 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
         update(density) { this.density = it }
         update(layoutDirection) { this.layoutDirection = it }
         update(contentDescription) { this.contentDescription = it }
-//        update(contentPadding) {
-//            applyContentPadding(map, it)
-//        }
+        update(contentPadding) {
+            applyContentPadding(mapView, it)
+        }
 
         set(locationSource) { map.setLocationSource(it) }
         set(mapProperties.isMapTextEnabled) { map.showMapText(it) }
         set(mapProperties.isBuildingEnabled) { map.showBuildings(it) }
         set(mapProperties.isIndoorEnabled) { map.showIndoorMap(it) }
-        set(mapProperties.isMyLocationEnabled) { map.isMyLocationEnabled = it }
+        update(mapProperties.isMyLocationEnabled) { map.isMyLocationEnabled = it } // needed to update
         set(mapProperties.isTrafficEnabled) { map.isTrafficEnabled = it }
-//        set(mapProperties.latLngBoundsForCameraTarget) { map.setLatLngBoundsForCameraTarget(it) }
+        set(mapProperties.latLngBoundsForCameraTarget) { map.setMapStatusLimits(it) }
         set(mapProperties.mapStyleOptions) { map.setCustomMapStyle(it) }
         set(mapProperties.mapType) { map.mapType = it.value }
         set(mapProperties.maxZoomPreference) { map.maxZoomLevel = it }
         set(mapProperties.minZoomPreference) { map.minZoomLevel = it }
-//        set(mapColorScheme) {
-//            if (it != null) {
-//                map.mapColorScheme = it
-//            }
-//        }
+        set(mapColorScheme) {
+            if (it != null) {
+                map.mapType = it
+            }
+        }
 
         set(mapUiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
         set(mapUiSettings.indoorLevelPickerEnabled) { map.uiSettings.isIndoorSwitchEnabled = it }
-//        set(mapUiSettings.mapToolbarEnabled) { map.uiSettings.isMapToolbarEnabled = it }
         set(mapUiSettings.myLocationButtonEnabled) { map.uiSettings.isMyLocationButtonEnabled = it }
         set(mapUiSettings.rotationGesturesEnabled) { map.uiSettings.isRotateGesturesEnabled = it }
         set(mapUiSettings.scaleControlsEnabled) { map.uiSettings.isScaleControlsEnabled = it }
         set(mapUiSettings.scrollGesturesEnabled) { map.uiSettings.isScrollGesturesEnabled = it }
-//        set(mapUiSettings.scrollGesturesEnabledDuringRotateOrZoom) { map.uiSettings.isScrollGesturesEnabledDuringRotateOrZoom = it }
         set(mapUiSettings.tiltGesturesEnabled) { map.uiSettings.isTiltGesturesEnabled = it }
         set(mapUiSettings.zoomControlsEnabled) { map.uiSettings.isZoomControlsEnabled = it }
         set(mapUiSettings.zoomGesturesEnabled) { map.uiSettings.isZoomGesturesEnabled = it }
@@ -173,14 +159,14 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
     }
 }
 
-private fun MapPropertiesNode.applyContentPadding(map: AMap, contentPadding: PaddingValues) {
+private fun MapPropertiesNode.applyContentPadding(map: MapView, contentPadding: PaddingValues) {
     val node = this
-//    with (this.density) {
-//        map.setPadding(
-//            contentPadding.calculateLeftPadding(node.layoutDirection).roundToPx(),
-//            contentPadding.calculateTopPadding().roundToPx(),
-//            contentPadding.calculateRightPadding(node.layoutDirection).roundToPx(),
-//            contentPadding.calculateBottomPadding().roundToPx()
-//        )
-//    }
+    with (this.density) {
+        map.setPadding(
+            contentPadding.calculateLeftPadding(node.layoutDirection).roundToPx(),
+            contentPadding.calculateTopPadding().roundToPx(),
+            contentPadding.calculateRightPadding(node.layoutDirection).roundToPx(),
+            contentPadding.calculateBottomPadding().roundToPx()
+        )
+    }
 }

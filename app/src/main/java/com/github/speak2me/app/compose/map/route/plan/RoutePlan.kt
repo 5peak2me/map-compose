@@ -61,6 +61,7 @@ fun RoutePlan2(
 
     LaunchedEffect(initialSearchLocation) {
         initialSearchLocation?.let {
+            println("RoutePlan2 收到 initialSearchLocation: $it")
             viewModel.onSearchLocationChanged(it)
         }
     }

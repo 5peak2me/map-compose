@@ -16,11 +16,23 @@
 package com.github.speak2me.compose.map.amap
 
 import android.view.View
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ComposeNode
+import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.currentComposer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.StateFactoryMarker
+import androidx.compose.ui.UiComposable
 import androidx.compose.ui.geometry.Offset
+import com.amap.api.maps.model.MarkerOptions as AdvancedMarkerOptions
 import com.amap.api.maps.model.BitmapDescriptor
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.LatLng
@@ -28,7 +40,6 @@ import com.amap.api.maps.model.Marker
 import com.github.speak2me.compose.map.amap.ktx.addMarker
 import com.github.speak2me.compose.map.amap.ktx.model.markerOptions
 import kotlin.math.roundToInt
-import com.amap.api.maps.model.MarkerOptions as AdvancedMarkerOptions
 
 internal class MarkerNode(
     val compositionContext: CompositionContext,
@@ -186,13 +197,13 @@ public class MarkerState private constructor(position: LatLng) {
             "so it will be changed or removed.",
     replaceWith = ReplaceWith(
         expression = """
-            val markerState = rememberSaveable(key = key, saver = MarkerState.Saver) {
-                MarkerState(position)
-            }
+rememberSaveable(key = key, saver = MarkerState.Saver) {
+    MarkerState(position)
+}
         """
     )
 )
-public fun rememberUpdatedMarkerState(
+public fun rememberMarkerState(
     key: String? = null,
     position: LatLng = LatLng(0.0, 0.0)
 ): MarkerState = rememberSaveable(key = key, saver = MarkerState.Saver) {
@@ -329,7 +340,7 @@ public fun MarkerComposable(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    content: @Composable () -> Unit,
+    content: @UiComposable @Composable () -> Unit,
 ) {
     val icon = rememberComposeBitmapDescriptor(*keys) { content() }
 
@@ -401,7 +412,7 @@ public fun MarkerInfoWindow(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    content: (@Composable (Marker) -> Unit)? = null
+    content: (@UiComposable @Composable (Marker) -> Unit)? = null
 ) {
     MarkerImpl(
         state = state,
@@ -473,8 +484,8 @@ public fun MarkerInfoWindowComposable(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    infoContent: (@Composable (Marker) -> Unit)? = null,
-    content: @Composable () -> Unit,
+    infoContent: (@UiComposable @Composable (Marker) -> Unit)? = null,
+    content: @UiComposable @Composable () -> Unit,
 ) {
     val icon = rememberComposeBitmapDescriptor(*keys) { content() }
 
@@ -546,7 +557,7 @@ public fun MarkerInfoWindowContent(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    content: (@Composable (Marker) -> Unit)? = null
+    content: (@UiComposable @Composable (Marker) -> Unit)? = null
 ) {
     MarkerImpl(
         state = state,
@@ -632,7 +643,7 @@ private fun MarkerImpl(
                 draggable(draggable)
                 isFlat = flat
                 icon(icon)
-                setInfoWindowOffset(infoWindowAnchor.x.roundToInt(), infoWindowAnchor.y.roundToInt())
+                setInfoWindowAnchor(infoWindowAnchor.x, infoWindowAnchor.y)
                 position(state.position)
                 rotateAngle(rotation)
                 snippet(snippet)
@@ -666,11 +677,7 @@ private fun MarkerImpl(
             update(draggable) { this.marker.isDraggable = it }
             update(flat) { this.marker.isFlat = it }
             update(icon) { this.marker.setIcon(it) }
-            update(infoWindowAnchor) {
-                this.marker.setMarkerOptions(markerOptions {
-                    setInfoWindowOffset(it.x.roundToInt(), it.y.roundToInt())
-                })
-            }
+            update(infoWindowAnchor) { this.marker.setMarkerOptions(markerOptions { setInfoWindowAnchor(it.x, it.y) }) }
             update(state.position) { this.marker.position = it }
             update(rotation) { this.marker.rotateAngle = it }
             update(snippet) {
@@ -853,7 +860,7 @@ private fun AdvancedMarkerImpl(
             advancedMarkerOptions.anchor(anchor.x, anchor.y)
             advancedMarkerOptions.draggable(draggable)
             advancedMarkerOptions.isFlat = flat
-            advancedMarkerOptions.setInfoWindowOffset(infoWindowAnchor.x.roundToInt(), infoWindowAnchor.y.roundToInt())
+            advancedMarkerOptions.setInfoWindowAnchor(infoWindowAnchor.x, infoWindowAnchor.y)
             advancedMarkerOptions.position(state.position)
             advancedMarkerOptions.rotateAngle(rotation)
             advancedMarkerOptions.snippet(snippet)
@@ -887,11 +894,7 @@ private fun AdvancedMarkerImpl(
             update(anchor) { this.marker.setAnchor(it.x, it.y) }
             update(draggable) { this.marker.isDraggable = it }
             update(flat) { this.marker.isFlat = it }
-            update(infoWindowAnchor) {
-                this.marker.setMarkerOptions(markerOptions {
-                    setInfoWindowOffset(it.x.roundToInt(), it.y.roundToInt())
-                })
-            }
+            update(infoWindowAnchor) { this.marker.setMarkerOptions(markerOptions { setInfoWindowAnchor(it.x, it.y) }) }
             update(state.position) { this.marker.position = it }
             update(rotation) { this.marker.rotateAngle = it }
             update(snippet) {
@@ -926,4 +929,10 @@ private fun AdvancedMarkerImpl(
             update(zIndex) { this.marker.zIndex = it }
         }
     )
+}
+
+private fun AdvancedMarkerOptions.setInfoWindowAnchor(anchorU: Float, anchorV: Float) {
+    val width = icon?.width ?: 0
+    val height = icon?.height ?: 0
+    setInfoWindowOffset((width * (anchorU - 0.5)).roundToInt(), (height * (anchorV - 0.5)).roundToInt())
 }

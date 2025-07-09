@@ -23,6 +23,7 @@ import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.github.speak2me.compose.map.tencent.ktx.toLocation
 import com.tencent.tencentmap.mapsdk.maps.TencentMap
 import com.tencent.tencentmap.mapsdk.maps.TencentMap.*
 import com.tencent.tencentmap.mapsdk.maps.model.IndoorBuilding
@@ -65,7 +66,7 @@ internal class MapClickListeners {
 }
 
 /**
- * @param L TencentMap click listener type, e.g. [OnMapClickListener]
+87777777777777777777771` * @param L TencentMap click listener type, e.g. [OnMapClickListener]
  */
 internal class MapClickListenerNode<L : Any>(
     private val map: TencentMap,
@@ -141,12 +142,7 @@ internal fun MapClickListenerUpdater() {
             MapClickListenerComposeNode(
                 callback,
                 TencentMap::setMyLocationClickListener,
-                OnMyLocationClickListener {
-                    callback()?.invoke(Location(null).apply {
-                        latitude = it.latitude
-                        longitude = it.longitude
-                        altitude = it.altitude
-                    })
+                OnMyLocationClickListener { callback()?.invoke(it.toLocation())
                     true
                 }
             )

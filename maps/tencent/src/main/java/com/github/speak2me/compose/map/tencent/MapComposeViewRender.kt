@@ -153,4 +153,5 @@ private class NoDrawContainerView(context: Context) : ViewGroup(context) {
 
     override fun dispatchDraw(canvas: Canvas) {
     }
+
 }

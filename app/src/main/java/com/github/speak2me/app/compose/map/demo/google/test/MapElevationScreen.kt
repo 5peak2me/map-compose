@@ -26,7 +26,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 
 @Composable
-fun MapElevationScreen(viewModel: MapElevationViewModel) {
+fun MapElevationScreen(
+    viewModel: MapElevationViewModel,
+    onClick: () -> Unit,
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // 处理加载状态
@@ -120,6 +123,12 @@ fun MapElevationScreen(viewModel: MapElevationViewModel) {
                         )
                     }
                 }
+            }
+
+            Button(
+                modifier = Modifier.align(Alignment.Center),
+                onClick = onClick) {
+                Text("跳转")
             }
 
             // 添加一个清除marker的按钮

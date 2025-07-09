@@ -15,8 +15,7 @@
  */
 package com.github.speak2me.compose.map.amap.ktx
 
-import android.view.View
-import android.view.View.OnAttachStateChangeListener
+import androidx.core.view.doOnAttach
 import com.amap.api.maps.AMap
 //import com.amap.api.maps.MapView
 import com.amap.api.maps.TextureMapView as MapView
@@ -31,11 +30,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 public suspend inline fun MapView.awaitMap(): AMap =
     suspendCoroutine { continuation ->
-        addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
-            override fun onViewAttachedToWindow(v: View) {
-                continuation.resume(map)
-            }
-
-            override fun onViewDetachedFromWindow(v: View) = Unit
-        })
+        doOnAttach {
+            continuation.resume(map)
+        }
     }

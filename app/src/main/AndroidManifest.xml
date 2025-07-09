@@ -33,7 +33,7 @@
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
 
     <application
-        android:name="com.github.speak2me.app.compose.map.App"
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -82,7 +82,7 @@
             android:name=".demo.tencent.TencentMapActivity" />
 
         <activity
-            android:name=".demo.DemoActivity"
+            android:name=".demo.MapDemoActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -146,6 +146,8 @@
         <activity
             android:name=".markerexamples.draggablemarkerscollectionwithpolygon.DraggableMarkersCollectionWithPolygonActivity"
             android:exported="false" />
+
+        <activity android:name=".FragmentDemoActivity" />
 
         <!-- Used by createComponentActivity() for unit testing -->
         <activity android:name="androidx.activity.ComponentActivity" />

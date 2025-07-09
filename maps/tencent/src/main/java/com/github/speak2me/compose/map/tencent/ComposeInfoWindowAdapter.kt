@@ -19,7 +19,6 @@ import android.view.View
 import androidx.compose.ui.platform.ComposeView
 import com.tencent.tencentmap.mapsdk.maps.MapView
 import com.tencent.tencentmap.mapsdk.maps.TencentMap
-import com.tencent.tencentmap.mapsdk.maps.TencentMap.InfoWindowAdapter
 import com.tencent.tencentmap.mapsdk.maps.model.Marker
 
 /**
@@ -40,7 +39,7 @@ import com.tencent.tencentmap.mapsdk.maps.model.Marker
 internal class ComposeInfoWindowAdapter(
     private val mapView: MapView,
     private val markerNodeFinder: (Marker) -> MarkerNode?
-) : InfoWindowAdapter {
+) : TencentMap.InfoWindowAdapter {
 
     override fun getInfoContents(marker: Marker): View? {
         val markerNode = markerNodeFinder(marker) ?: return null

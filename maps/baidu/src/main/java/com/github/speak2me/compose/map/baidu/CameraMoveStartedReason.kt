@@ -46,7 +46,7 @@ public enum class CameraMoveStartedReason(public val value: Int) {
          * See https://lbsyun.baidu.com/faq/api?title=androidsdk/guide/interaction/event#constants.
          */
         public fun fromInt(value: Int): CameraMoveStartedReason {
-            return entries.firstOrNull { it.value == value } ?: return UNKNOWN
+            return values().firstOrNull { it.value == value } ?: return UNKNOWN
         }
     }
 }

@@ -145,11 +145,13 @@ public fun TencentMap.cameraIdleEvents(): Flow<CameraEvent> =
  *
  * @return the snapshot
  */
-public suspend inline fun TencentMap.awaitSnapshot(): Bitmap? =
+public suspend inline fun TencentMap.awaitSnapshot(config: Bitmap.Config = Bitmap.Config.ARGB_8888): Bitmap? =
     suspendCoroutine { continuation ->
-        snapshot {
-            continuation.resume(it)
-        }
+        snapshot(
+            {
+                continuation.resume(it)
+            }, config
+        )
     }
 
 /**

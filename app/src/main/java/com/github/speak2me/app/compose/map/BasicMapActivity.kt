@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,14 +37,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.CoordinateConverter
+import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.CameraPosition
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.Marker
@@ -54,8 +60,12 @@ import com.github.speak2me.compose.map.amap.ComposeMapColorScheme
 import com.github.speak2me.compose.map.amap.MapProperties
 import com.github.speak2me.compose.map.amap.MapType
 import com.github.speak2me.compose.map.amap.MapUiSettings
+import com.github.speak2me.compose.map.amap.Marker
+import com.github.speak2me.compose.map.amap.MarkerComposable
+import com.github.speak2me.compose.map.amap.MarkerInfoWindowComposable
 import com.github.speak2me.compose.map.amap.MarkerInfoWindowContent
 import com.github.speak2me.compose.map.amap.MarkerState
+import com.github.speak2me.compose.map.amap.Polygon
 import com.github.speak2me.compose.map.amap.Polyline
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
 import com.github.speak2me.compose.map.amap.rememberUpdatedMarkerState
@@ -64,15 +74,15 @@ import kotlinx.coroutines.launch
 private const val TAG = "BasicMapActivity"
 
 val singapore = LatLng(31.820586, 117.227239)
-val singapore2 = LatLng(1.40, 103.77)
-val singapore3 = LatLng(1.45, 103.77)
-//val singapore4 = LatLng(1.50, 103.77)
-//val singapore5 = LatLng(1.3418, 103.8461)
-//val singapore6 = LatLng(1.3430, 103.8844)
-//val singapore7 = LatLng(1.3430, 103.9116)
-//val singapore8 = LatLng(1.3300, 103.8624)
-//val singapore9 = LatLng(1.3200, 103.8541)
-//val singapore10 = LatLng(1.3200, 103.8765)
+val singapore2 = LatLng(31.40, 117.77)
+val singapore3 = LatLng(31.45, 117.77)
+val singapore4 = LatLng(31.50, 117.77)
+val singapore5 = LatLng(31.3418, 117.8461)
+val singapore6 = LatLng(31.3430, 117.8844)
+val singapore7 = LatLng(31.3430, 117.9116)
+val singapore8 = LatLng(31.3300, 117.8624)
+val singapore9 = LatLng(31.3200, 117.8541)
+val singapore10 = LatLng(31.3200, 117.8765)
 
 val defaultCameraPosition = CameraPosition.fromLatLngZoom(singapore, 11f)
 
@@ -136,10 +146,10 @@ fun AMapView(
     content: @Composable () -> Unit = {},
 ) {
     val singaporeState = rememberUpdatedMarkerState(position = singapore)
-//    val singapore2State = rememberUpdatedMarkerState(position = singapore2)
-//    val singapore3State = rememberUpdatedMarkerState(position = singapore3)
-//    val singapore4State = rememberUpdatedMarkerState(position = singapore4)
-//    val singapore5State = rememberUpdatedMarkerState(position = singapore5)
+    val singapore2State = rememberUpdatedMarkerState(position = singapore2)
+    val singapore3State = rememberUpdatedMarkerState(position = singapore3)
+    val singapore4State = rememberUpdatedMarkerState(position = singapore4)
+    val singapore5State = rememberUpdatedMarkerState(position = singapore5)
 
     var circleCenter by remember { mutableStateOf(singapore) }
     if (!singaporeState.isDragging) {
@@ -155,10 +165,10 @@ fun AMapView(
         )
     }
 //    val polylinePoints = remember { listOf(singapore, singapore5) }
-//    val polylineSpanPoints = remember { listOf(singapore, singapore6, singapore7) }
+    val polylineSpanPoints = remember { listOf(singapore, singapore6, singapore7) }
 //    val styleSpanList = remember { listOf(styleSpan) }
 
-//    val polygonPoints = remember { listOf(singapore8, singapore9, singapore10) }
+    val polygonPoints = remember { listOf(singapore8, singapore9, singapore10) }
 
     var uiSettings by remember { mutableStateOf(MapUiSettings(compassEnabled = false)) }
     var shouldAnimateZoom by remember { mutableStateOf(true) }
@@ -198,62 +208,62 @@ fun AMapView(
             ) {
                 Text(it.title ?: "Title", color = Color.Red)
             }
-//            MarkerInfoWindowContent(
-//                state = singapore2State,
-//                title = "Marker with custom info window.\nZoom in has been tapped $ticker times.",
-//                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE),
-//                onClick = markerClick,
-//            ) {
-//                Text(it.title ?: "Title", color = Color.Blue)
-//            }
-//            Marker(
-//                state = singapore3State,
-//                title = "Marker in Singapore",
-//                onClick = markerClick
-//            )
-//            MarkerComposable(
-//                title = "Marker Composable",
-//                keys = arrayOf("singapore4"),
-//                state = singapore4State,
-//                onClick = markerClick,
-//            ) {
-//                Box(
-//                    modifier = Modifier
-//                        .width(88.dp)
-//                        .height(36.dp)
-//                        .clip(RoundedCornerShape(16.dp))
-//                        .background(Color.Red),
-//                    contentAlignment = Alignment.Center,
-//                ) {
-//                    Text(
-//                        text = "Compose Marker",
-//                        textAlign = TextAlign.Center,
-//                    )
-//                }
-//            }
-//            MarkerInfoWindowComposable(
-//                keys = arrayOf("singapore5"),
-//                state = singapore5State,
-//                onClick = markerClick,
-//                title = "Marker with custom Composable info window",
-//                infoContent = {
-//                    Text(it.title ?: "Title", color = Color.Blue)
-//                }
-//            ) {
-//                Box(
-//                    modifier = Modifier
-//                        .width(88.dp)
-//                        .height(36.dp)
-//                        .clip(RoundedCornerShape(16.dp))
-//                        .background(Color.Red),
-//                    contentAlignment = Alignment.Center,
-//                ) {
-//                    Text(
-//                        text = "Compose MarkerInfoWindow",
-//                        textAlign = TextAlign.Center,
-//                    )
-//                }
-//            }
+            MarkerInfoWindowContent(
+                state = singapore2State,
+                title = "Marker with custom info window.\nZoom in has been tapped $ticker times.",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE),
+                onClick = markerClick,
+            ) {
+                Text(it.title ?: "Title", color = Color.Blue)
+            }
+            Marker(
+                state = singapore3State,
+                title = "Marker in Singapore",
+                onClick = markerClick
+            )
+            MarkerComposable(
+                title = "Marker Composable",
+                keys = arrayOf("singapore4"),
+                state = singapore4State,
+                onClick = markerClick,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(88.dp)
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Red),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Compose Marker",
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+            MarkerInfoWindowComposable(
+                keys = arrayOf("singapore5"),
+                state = singapore5State,
+                onClick = markerClick,
+                title = "Marker with custom Composable info window",
+                infoContent = {
+                    Text(it.title ?: "Title", color = Color.Blue)
+                }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(88.dp)
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Red),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Compose MarkerInfoWindow",
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
 
             Circle(
                 center = circleCenter,
@@ -267,16 +277,16 @@ fun AMapView(
                 tag = "Polyline A",
             )
 
-//            Polyline(
-//                points = polylineSpanPoints,
-////                spans = styleSpanList,
-////                tag = "Polyline B",
-//            )
-//
-//            Polygon(
-//                points = polygonPoints,
-//                fillColor = Color.Black.copy(alpha = 0.5f)
-//            )
+            Polyline(
+                points = polylineSpanPoints,
+//                spans = styleSpanList,
+                tag = "Polyline B",
+            )
+
+            Polygon(
+                points = polygonPoints,
+                fillColor = Color.Black.copy(alpha = 0.5f)
+            )
 
             content()
         }

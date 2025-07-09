@@ -15,6 +15,7 @@
  */
 package com.github.speak2me.compose.map.baidu
 
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.AbstractApplier
 import com.baidu.mapapi.map.BaiduMap
 import com.baidu.mapapi.map.Circle

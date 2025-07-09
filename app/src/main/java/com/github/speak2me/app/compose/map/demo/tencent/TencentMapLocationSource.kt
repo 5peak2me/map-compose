@@ -37,17 +37,13 @@ class TencentMapLocationSource(
     }
 
     override fun activate(listener: LocationSource.OnLocationChangedListener?) {
-        println("activate")
+        println("t: activate")
 
         callback = object : TencentLocationListener {
             override fun onLocationChanged(location: TencentLocation, error: Int, reason: String) {
                 println("location t = $location")
-                listener?.onLocationChanged(Location(location.provider).apply {
-                    latitude = location.latitude
-                    longitude = location.longitude
-                    altitude = location.altitude
-                })
-                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(location.toLatLng(), 15f))
+                listener?.onLocationChanged(location.toSysLocation())
+                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(location.toLatLng(), 14.5f))
             }
 
             override fun onStatusUpdate(name: String, status: Int, desc: String) = Unit
@@ -59,7 +55,7 @@ class TencentMapLocationSource(
     }
 
     override fun deactivate() {
-        println("deactivate")
+        println("t: deactivate")
         client.removeUpdates(callback)
     }
 }
@@ -68,3 +64,9 @@ private fun TencentLocation.toLatLng(): LatLng = LatLng(
     latitude,
     longitude
 )
+
+private fun TencentLocation.toSysLocation(): Location = Location("tencent-map-compose").apply {
+    latitude = this@toSysLocation.latitude
+    longitude = this@toSysLocation.longitude
+    altitude = this@toSysLocation.altitude
+}

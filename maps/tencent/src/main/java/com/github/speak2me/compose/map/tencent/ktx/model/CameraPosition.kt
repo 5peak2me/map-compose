@@ -27,7 +27,7 @@ import com.github.speak2me.compose.map.tencent.CameraPosition as ComposeCameraPo
 public inline fun cameraPosition(optionsActions: CameraPosition.Builder.() -> Unit): CameraPosition =
     CameraPosition.Builder().apply(optionsActions).build()
 
-public inline fun CameraPosition.toComposeCameraPosition(): ComposeCameraPosition {
+public fun CameraPosition.toComposeCameraPosition(): ComposeCameraPosition {
     return ComposeCameraPosition(target, zoom, bearing, tilt)
 }
 

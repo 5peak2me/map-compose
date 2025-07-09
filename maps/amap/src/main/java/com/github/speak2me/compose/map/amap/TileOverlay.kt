@@ -40,36 +40,17 @@ private class TileOverlayNode(
     }
 }
 
-@Composable
-@AMapComposable
-@Deprecated("For compatibility", level = DeprecationLevel.HIDDEN)
-public fun TileOverlay(
-    tileProvider: TileProvider,
-//    fadeIn: Boolean = true,
-//    transparency: Float = 0f,
-    visible: Boolean = true,
-    zIndex: Float = 0f,
-    onClick: (TileOverlay) -> Unit = {},
-) {
-    TileOverlay(
-        tileProvider = tileProvider,
-        state = rememberTileOverlayState(),
-//        fadeIn = fadeIn,
-//        transparency = transparency,
-        visible = visible,
-        zIndex = zIndex,
-        onClick = onClick,
-    )
-}
-
 /**
  * A composable for a tile overlay on the map.
  *
  * @param tileProvider the tile provider to use for this tile overlay
  * @param state the [TileOverlayState] to be used to control the tile overlay, such as clearing
  * stale tiles
- * @param fadeIn boolean indicating whether the tiles should fade in
- * @param transparency the transparency of the tile overlay
+ * @param memCacheSize Maximum size (in bytes) for the in-memory cache. Default is 5 MB.
+ * @param memCacheEnabled Whether in-memory caching is enabled. Default is `true`.
+ * @param diskCacheSize Maximum size (in bytes) for the on-disk cache. Default is 20 MB.
+ * @param diskCacheEnabled Whether disk caching is enabled. Default is `true`.
+ * @param diskCacheDir Optional custom directory path for storing disk cache. If `null`, the system default cache location is used.
  * @param visible the visibility of the tile overlay
  * @param zIndex the z-index of the tile overlay
  * @param onClick a lambda invoked when the tile overlay is clicked
@@ -79,8 +60,11 @@ public fun TileOverlay(
 public fun TileOverlay(
     tileProvider: TileProvider,
     state: TileOverlayState = rememberTileOverlayState(),
-//    fadeIn: Boolean = true,
-//    transparency: Float = 0f,
+    memCacheSize: Int = 5 * 1024 * 1024,
+    memCacheEnabled: Boolean = true,
+    diskCacheSize: Int = 20 * 1024 * 1024,
+    diskCacheEnabled: Boolean = true,
+    diskCacheDir: String? = null,
     visible: Boolean = true,
     zIndex: Float = 0f,
     onClick: (TileOverlay) -> Unit = {},
@@ -90,8 +74,11 @@ public fun TileOverlay(
         factory = {
             val tileOverlay = mapApplier?.map?.addTileOverlay {
                 tileProvider(tileProvider)
-//                fadeIn(fadeIn)
-//                transparency(transparency)
+                memCacheSize(memCacheSize)
+                memoryCacheEnabled(memCacheEnabled)
+                diskCacheSize(diskCacheSize)
+                diskCacheEnabled(diskCacheEnabled)
+                diskCacheDir(diskCacheDir)
                 visible(visible)
                 zIndex(zIndex)
             } ?: error("Error adding tile overlay")
@@ -104,14 +91,16 @@ public fun TileOverlay(
                 this.tileOverlay.remove()
                 this.tileOverlay = mapApplier?.map?.addTileOverlay {
                     tileProvider(tileProvider)
-//                    fadeIn(fadeIn)
-//                    transparency(transparency)
+                    memCacheSize(memCacheSize)
+                    memoryCacheEnabled(memCacheEnabled)
+                    diskCacheSize(diskCacheSize)
+                    diskCacheEnabled(diskCacheEnabled)
+                    diskCacheDir(diskCacheDir)
                     visible(visible)
                     zIndex(zIndex)
                 } ?: error("Error adding tile overlay")
+                this.tileOverlayState.tileOverlay = this.tileOverlay
             }
-//            update(fadeIn) { this.tileOverlay.fadeIn = it }
-//            update(transparency) { this.tileOverlay.transparency = it }
             update(visible) { this.tileOverlay.isVisible = it }
             update(zIndex) { this.tileOverlay.zIndex = it }
         }

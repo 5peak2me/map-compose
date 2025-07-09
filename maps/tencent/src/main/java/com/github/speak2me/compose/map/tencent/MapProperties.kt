@@ -38,7 +38,7 @@ public class MapProperties(
     public val latLngBoundsForCameraTarget: LatLngBounds? = null,
     public val mapStyleOptions: Int? = null,
     public val mapType: MapType = MapType.NORMAL,
-    public val maxZoomPreference: Float = 21.0f,
+    public val maxZoomPreference: Float = 22.0f,
     public val minZoomPreference: Float = 3.0f,
 ) {
     override fun toString(): String = "MapProperties(" +
