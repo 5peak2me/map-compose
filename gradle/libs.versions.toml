@@ -1,21 +1,21 @@
 [versions]
 accompanistPermissions = "0.37.3"
 agp = "9.0.0"
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 coreKtx = "1.17.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 # https://developer.android.com/jetpack/androidx/releases/lifecycle?hl=zh-cn#2.10.0-alpha04
 lifecycleRuntimeKtx = "2.10.0"
-activityCompose = "1.12.1"
-composeBom = "2025.12.00"
+activityCompose = "1.12.2"
+composeBom = "2026.01.00"
 #appcompat = "1.7.1"
 #material = "1.13.0"
 mockito = "5.21.0"
 mockitoInline = "5.2.0"
 mockitoKotlin = "2.2.0"
-map-baidu = "7.6.6"
+map-baidu = "7.6.7"
 viewpager2 = "1.1.0"
 constraintlayout = "2.2.1"
 #kotlinxSerializationJson = "1.9.0"
@@ -58,21 +58,21 @@ map-baidu-base = { module = "com.baidu.lbsyun:base", version.ref = "map-baidu" }
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Util
 map-baidu-util = { module = "com.baidu.lbsyun:BaiduMapSDK_Util", version.ref = "map-baidu" }
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Location
-map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.6.6.1" }
+map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.6.6.2" }
 
 # https://central.sonatype.com/artifact/com.tencent.map/tencent-map-vector-sdk
 map-tencent = "com.tencent.map:tencent-map-vector-sdk:6.6.4.251121.6d0d4a80.176437250"
 # https://central.sonatype.com/artifact/com.tencent.openmap/foundation
 map-tencent-foundation = "com.tencent.openmap:foundation:0.7.0.92a115a"
 # https://central.sonatype.com/artifact/com.tencent.map/sdk-utilities
-map-tencent-utilities = "com.tencent.map:sdk-utilities:1.0.10"
+map-tencent-utilities = "com.tencent.map:sdk-utilities:1.0.11"
 # https://central.sonatype.com/artifact/com.tencent.map.geolocation/TencentLocationSdk-openplatform
 map-tencent-geolocation = "com.tencent.map.geolocation:TencentLocationSdk-openplatform:7.6.1.12"
 
 # https://github.com/googlemaps/android-maps-compose
-map-google = "com.google.maps.android:maps-compose:6.12.2"
+map-google = "com.google.maps.android:maps-compose:7.0.0"
 # https://github.com/googlemaps/android-maps-utils
-map-google-utils = "com.google.maps.android:android-maps-utils:3.20.0"
+map-google-utils = "com.google.maps.android:android-maps-utils:4.0.0"
 # https://github.com/googlemaps/android-maps-ktx
 #map-google-utils-ktx = "com.google.maps.android:maps-utils-ktx:5.2.1"
 map-google-location = "com.google.android.gms:play-services-location:21.3.0"

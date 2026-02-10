@@ -159,7 +159,6 @@ fun MapsInLazyColumn(
 
     val cameraPositionStates = mapItems.associate { item ->
         item.id to rememberCameraPositionState(
-            key = item.id,
             init = { position = CameraPosition.fromLatLngZoom(item.location, item.zoom) }
         )
     }
