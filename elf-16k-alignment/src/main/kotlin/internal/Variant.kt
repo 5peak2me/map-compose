@@ -24,6 +24,13 @@ private fun ResolvedArtifactResult.soLibs(): List<File> = file.walkTopDown()
     .filter { it.isFile && regex.containsMatchIn(it.absolutePath) }.toList()
 
 internal fun ApplicationVariant.aarLibsWithJNI(): Map<String, List<File>> {
+    val localLibs = this.sources.jniLibs?.all?.get()?.flatMap {
+        it.flatMap { it.asFile.listFiles()?.mapNotNull { it }?.flatMap {
+            it.listFiles()?.mapNotNull { it }.orEmpty()
+        }.orEmpty() }
+    }.orEmpty()
+    println(localLibs)
+
     return runtimeConfiguration.incoming.artifactView {
         attributes.attribute(
             AndroidArtifacts.ARTIFACT_TYPE,
@@ -32,7 +39,7 @@ internal fun ApplicationVariant.aarLibsWithJNI(): Map<String, List<File>> {
     }.artifacts.artifacts
         .associate {
             it.identifier to it.soLibs()
-        }
+        } + mapOf("app" to localLibs)
 }
 
 //context(project: Project)

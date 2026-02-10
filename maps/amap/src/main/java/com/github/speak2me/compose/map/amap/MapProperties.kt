@@ -15,6 +15,7 @@
  */
 package com.github.speak2me.compose.map.amap
 
+import androidx.compose.runtime.Stable
 import com.amap.api.maps.model.LatLngBounds
 import com.amap.api.maps.model.CustomMapStyleOptions as MapStyleOptions
 import java.util.Objects
@@ -31,6 +32,7 @@ public val DefaultMapProperties: MapProperties = MapProperties()
  * compatibility on future changes.
  * See: https://jakewharton.com/public-api-challenges-in-kotlin/
  */
+@Stable
 public class MapProperties(
     public val isMapTextEnabled: Boolean = true,
     public val isBuildingEnabled: Boolean = false,

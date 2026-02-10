@@ -58,27 +58,6 @@ public inline fun rememberCameraPositionState(
 }
 
 /**
- * Create and [rememberSaveable] a [CameraPositionState] using [CameraPositionState.Saver].
- * [init] will be called when the [CameraPositionState] is first created to configure its
- * initial state. Remember that the camera state can be applied when the map has been
- * loaded.
- */
-@Deprecated(
-    message = "The 'key' parameter is deprecated. Please use the new `rememberCameraPositionState` function without a key.",
-    replaceWith = ReplaceWith(
-        "rememberCameraPositionState(init)",
-        "com.google.maps.android.compose.rememberCameraPositionState"
-    )
-)
-@Composable
-public inline fun rememberCameraPositionState(
-    key: String? = null,
-    crossinline init: CameraPositionState.() -> Unit = {}
-): CameraPositionState = rememberSaveable(key = key, saver = CameraPositionState.Saver) {
-    CameraPositionState().apply(init)
-}
-
-/**
  * A state object that can be hoisted to control and observe the map's camera state.
  * A [CameraPositionState] may only be used by a single [AMap] composable at a time
  * as it reflects instance state for a single view of a map.
