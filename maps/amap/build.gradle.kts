@@ -54,8 +54,6 @@ kotlin {
     compilerOptions {
 //        allWarningsAsErrors = true
         // https://docs.gradle.org/current/userguide/compatibility.html#kotlin
-        apiVersion = KotlinVersion.KOTLIN_2_2
-        languageVersion = apiVersion
         jvmTarget.set(JvmTarget.JVM_11)
     }
 //    @OptIn(ExperimentalAbiValidation::class)
