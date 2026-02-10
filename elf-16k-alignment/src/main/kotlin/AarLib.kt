@@ -14,9 +14,9 @@ internal data class JniLib(
     val path: String,
     @Transient val max: Long,
 ) {
-    fun compatibility(console: Boolean = false) = if (align >= max) {
-        if (console) "✔" else "✅"
+    fun compatibility(console: Boolean = false) = if (console) {
+        if (align >= max) "✔" else "⚠"
     } else {
-        if (console) "⚠" else "❌"
+        if (align >= max) "✅" else "❌"
     }
 }
