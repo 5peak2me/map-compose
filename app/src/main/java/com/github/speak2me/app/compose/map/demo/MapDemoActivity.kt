@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.github.speak2me.app.compose.map.MapComposeActivity
 import com.github.speak2me.app.compose.map.R
 import com.github.speak2me.app.compose.map.demo.amap.AMapActivity
 import com.github.speak2me.app.compose.map.demo.baidu.BaiduMapActivity
@@ -65,6 +66,12 @@ class MapDemoActivity : ComponentActivity() {
                                 context.startActivity(Intent(context, RoutePlanActivity::class.java))
                             }) {
                             Text("路线规划")
+                        }
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(context, MapComposeActivity::class.java))
+                            }) {
+                            Text("离线地图")
                         }
                         MapMenu()
                         Button(
