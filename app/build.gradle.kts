@@ -88,9 +88,9 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     // define a BOM and its version
-    implementation(platform("com.squareup.okhttp3:okhttp-bom:5.1.0"))
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:5.3.2"))
 
     // define any required OkHttp artifacts without version
     implementation("com.squareup.okhttp3:okhttp")
