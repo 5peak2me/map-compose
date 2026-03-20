@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +55,7 @@ fun MapCompose(
     frameStrategy: SelectionFrameStrategy = remember { CenterAnchoredFrameStrategy() },
     frameResizePolicy: FrameResizePolicy = remember { MaxWidthFrameResizePolicy() },
     distanceCalculator: DistanceCalculator = remember { PlatformDistanceCalculator() },
-    distanceTextFormatter: DistanceTextFormatter = remember { KilometerDistanceTextFormatter() },
+    distanceFormatter: DistanceFormatter = remember { KilometerDistanceFormatter() },
 ) {
     val mapController = mapPlatform.rememberController(
         initialCenter = defaultCenter,
@@ -134,10 +133,10 @@ fun MapCompose(
                 uiConfig = uiConfig
             )
             SelectionFrameOverlay(frame = resolvedFrame)
-            DistanceOverlay(
+            DistanceScaleOverlay(
                 frame = resolvedFrame,
-                distanceTextFormatter.format(widthMeters),
-                distanceTextFormatter.format(heightMeters)
+                distanceFormatter.format(widthMeters),
+                distanceFormatter.format(heightMeters)
             )
         }
     }
@@ -254,18 +253,21 @@ class PlatformDistanceCalculator : DistanceCalculator {
 /**
  * 负责格式化边框周边展示的距离文案。
  */
-interface DistanceTextFormatter {
+interface DistanceFormatter {
     /**
      * 将米单位距离转换为用户可读文案。
      */
     fun format(distanceMeters: Float?): String
 }
 
-class KilometerDistanceTextFormatter : DistanceTextFormatter {
+class KilometerDistanceFormatter : DistanceFormatter {
     override fun format(distanceMeters: Float?): String {
         if (distanceMeters == null) return "--"
         val kilometers = distanceMeters / 1000f
-        return String.format(Locale.getDefault(), "%.2f公里", kilometers)
+        return "%.2f公里".format(
+            Locale.getDefault(),
+            kilometers.coerceAtMost(400f).coerceAtLeast(16f)
+        )
     }
 }
 
@@ -301,37 +303,40 @@ private fun Rect.scaleFromCenter(scale: Float): Rect {
 }
 
 @Composable
-private fun SelectionFrameOverlay(frame: Rect) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .selectionFrameOverlay(frame)
-    )
-}
-
-private fun Modifier.selectionFrameOverlay(
+private fun SelectionFrameOverlay(
     frame: Rect,
     maskColor: Color = Color.Black.copy(alpha = 0.7f),
     borderColor: Color = Color(0xFF3A90FF),
     borderWidth: Dp = 4.dp,
-): Modifier = drawWithCache {
-    onDrawWithContent {
-        drawContent()
-        val selectionPath = Path().apply { addRect(frame) }
-        clipPath(path = selectionPath, clipOp = ClipOp.Difference) {
-            drawRect(color = maskColor, size = size)
-        }
-        drawRect(
-            color = borderColor,
-            topLeft = Offset(frame.left, frame.top),
-            size = Size(frame.width, frame.height),
-            style = Stroke(borderWidth.toPx())
-        )
-    }
+) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .drawWithCache {
+                onDrawWithContent {
+                    drawContent()
+                    val selectionPath = Path().apply { addRect(frame) }
+                    clipPath(path = selectionPath, clipOp = ClipOp.Difference) {
+                        drawRect(color = maskColor, size = size)
+                    }
+                    drawRect(
+                        color = borderColor,
+                        topLeft = Offset(frame.left, frame.top),
+                        size = Size(frame.width, frame.height),
+                        style = Stroke(borderWidth.toPx())
+                    )
+                }
+            }
+    )
 }
 
 @Composable
-private fun DistanceOverlay(frame: Rect, widthText: String, heightText: String) {
+private fun DistanceScaleOverlay(
+    frame: Rect,
+    widthText: String,
+    heightText: String,
+    guideColor: Color = Color(0xFF4FA0FF),
+) {
     val textMeasurer = rememberTextMeasurer()
     val distanceLabelStyle = remember {
         TextStyle(
@@ -341,162 +346,152 @@ private fun DistanceOverlay(frame: Rect, widthText: String, heightText: String) 
         )
     }
     Box(
-        modifier = Modifier
+        Modifier
             .fillMaxSize()
-            .distanceOverlay(
-                frame = frame,
-                widthText = widthText,
-                heightText = heightText,
-                textMeasurer = textMeasurer,
-                textStyle = distanceLabelStyle
-            )
+            .drawWithCache {
+                // 标尺线宽度（像素）
+                val strokePx = 1.dp.toPx()
+                // 端点刻度长度（像素）
+                val tickLengthPx = 8.dp.toPx()
+                // 标尺线与边框左边的间距（像素）
+                val gapPx = tickLengthPx
+                // 左右内边距（像素）
+                val labelPaddingHorizontalPx = 0.dp.toPx()
+                // 标签上下内边距（像素）
+                val labelPaddingVerticalPx = 0.dp.toPx()
+                // 标尺线与文字之间的最小间隔（像素）
+                val lineTextGapPx = 1.dp.toPx()
+
+                // 顶部标尺线 Y 坐标
+                val topLineY = frame.top - tickLengthPx - gapPx
+
+                // 顶部距离文案测量结果
+                val widthTextLayout =
+                    textMeasurer.measure(text = widthText, style = distanceLabelStyle)
+                // 顶部标签总宽（含内边距）
+                val widthLabelWidth = widthTextLayout.size.width + labelPaddingHorizontalPx * 2f
+                // 顶部标签总高（含内边距）
+                val widthLabelHeight = widthTextLayout.size.height + labelPaddingVerticalPx * 2f
+
+                // 顶部标签左上角 X（水平居中到边框中心）
+                val widthLabelLeft = frame.center.x - widthLabelWidth / 2f
+                // 顶部标签左上角 Y（锚定边框上边）
+                val widthLabelTop = frame.top - widthLabelHeight - tickLengthPx / 2
+                // 顶部标尺线被文字占用区间左边界
+                val widthLabelBlockLeft = widthLabelLeft - lineTextGapPx
+                // 顶部标尺线被文字占用区间右边界
+                val widthLabelBlockRight =
+                    widthLabelLeft + widthTextLayout.size.width + lineTextGapPx
+
+                // 当边框宽度不足以容纳顶部标签时，隐藏整组距离标注
+                val shouldDrawDistance = frame.width > widthLabelWidth
+
+                // 左侧标尺线 X 坐标
+                val leftLineX = frame.left - tickLengthPx - gapPx
+
+                // 左侧距离文案测量结果
+                val heightTextLayout =
+                    textMeasurer.measure(text = heightText, style = distanceLabelStyle)
+                // 左侧标签总宽（含内边距，旋转前）
+                val heightLabelWidth =
+                    heightTextLayout.size.width + labelPaddingHorizontalPx * 2f
+                // 左侧标签总高（含内边距，旋转前）
+                val heightLabelHeight =
+                    heightTextLayout.size.height + labelPaddingVerticalPx * 2f
+
+                val heightLabelTop = frame.center.y - heightLabelWidth / 2
+                val heightLabelBottom = frame.center.y + heightLabelWidth / 2
+                val heightLabelBlockTop = heightLabelTop - lineTextGapPx
+                val heightLabelBlockBottom = heightLabelBottom + lineTextGapPx
+
+                // 左侧标签旋转中心点
+                val heightLabelCenter = Offset(leftLineX, frame.center.y)
+
+                onDrawWithContent {
+                    drawContent()
+                    // <editor-fold desc="中心辅助线" defaultstate="collapsed">
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(frame.left, frame.center.y),
+                        end = Offset(frame.right, frame.center.y),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(frame.center.x, frame.top),
+                        end = Offset(frame.center.x, frame.bottom),
+                        strokeWidth = strokePx
+                    )
+                    // </editor-fold>
+
+                    if (!shouldDrawDistance) return@onDrawWithContent
+
+                    // horizontal: |-----16KM-----|
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(frame.left, topLineY),
+                        end = Offset(frame.left, topLineY + tickLengthPx),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(frame.left, topLineY + tickLengthPx / 2),
+                        end = Offset(widthLabelBlockLeft, topLineY + tickLengthPx / 2),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(widthLabelBlockRight, topLineY + tickLengthPx / 2),
+                        end = Offset(frame.right, topLineY + tickLengthPx / 2),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(frame.right, topLineY),
+                        end = Offset(frame.right, topLineY + tickLengthPx),
+                        strokeWidth = strokePx
+                    )
+                    drawText(
+                        textLayoutResult = widthTextLayout,
+                        topLeft = Offset(x = widthLabelLeft, y = widthLabelTop)
+                    )
+
+                    // vertical:
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(leftLineX, frame.top - strokePx),
+                        end = Offset(leftLineX + tickLengthPx, frame.top - strokePx),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(leftLineX + tickLengthPx / 2, frame.top - strokePx),
+                        end = Offset(leftLineX + tickLengthPx / 2, heightLabelBlockTop),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(leftLineX + tickLengthPx / 2, heightLabelBlockBottom),
+                        end = Offset(leftLineX + tickLengthPx / 2, frame.bottom + strokePx),
+                        strokeWidth = strokePx
+                    )
+                    drawLine(
+                        color = guideColor,
+                        start = Offset(leftLineX, frame.bottom + strokePx),
+                        end = Offset(leftLineX + tickLengthPx, frame.bottom + strokePx),
+                        strokeWidth = strokePx
+                    )
+                    rotate(degrees = -90f, pivot = heightLabelCenter) {
+                        drawText(
+                            textLayoutResult = heightTextLayout,
+                            topLeft = Offset(
+                                x = heightLabelCenter.x - heightLabelWidth / 2f,
+                                y = heightLabelCenter.y - heightLabelHeight / 4
+                            )
+                        )
+                    }
+                }
+            }
+
     )
-}
-
-private fun Modifier.distanceOverlay(
-    frame: Rect,
-    widthText: String,
-    heightText: String,
-    textMeasurer: TextMeasurer,
-    textStyle: TextStyle,
-    guideColor: Color = Color(0xFF4FA0FF),
-): Modifier = drawWithCache {
-    // 标尺线宽度（像素）
-    val strokePx = 1.dp.toPx()
-    // 端点刻度长度（像素）
-    val tickLengthPx = 8.dp.toPx()
-    // 左侧标尺线与边框左边的间距（像素）
-    val gapPx = tickLengthPx
-    // 顶部标签左右内边距（像素）
-    val topLabelPaddingHorizontalPx = 6.dp.toPx()
-    // 顶部标签上下内边距（像素）
-    val topLabelPaddingVerticalPx = 2.dp.toPx()
-    // 标尺线与文字之间的最小间隔（像素）
-    val lineTextGapPx = 1.dp.toPx()
-
-    // 顶部标尺线 Y 坐标
-    val topLineY = frame.top - tickLengthPx - gapPx
-    // 左侧标尺线 X 坐标
-    val leftLineX = frame.left - tickLengthPx - gapPx
-
-    // 顶部距离文案测量结果
-    val widthTextLayout = textMeasurer.measure(text = widthText, style = textStyle)
-    // 顶部标签总宽（含内边距）
-    val widthLabelWidth = widthTextLayout.size.width + topLabelPaddingHorizontalPx * 2f
-    // 顶部标签总高（含内边距）
-    val widthLabelHeight = widthTextLayout.size.height + topLabelPaddingVerticalPx * 2f
-    // 顶部标签左上角 X（水平居中到边框中心）
-    val widthLabelLeft = frame.center.x - widthLabelWidth / 2f
-    // 顶部标签左上角 Y（锚定边框上边）
-    val widthLabelTop = frame.top - widthLabelHeight
-    // 顶部标尺线被文字占用区间左边界
-    val widthLabelBlockLeft = widthLabelLeft - lineTextGapPx
-    // 顶部标尺线被文字占用区间右边界
-    val widthLabelBlockRight = widthLabelLeft + widthTextLayout.size.width + lineTextGapPx
-
-    // 当边框宽度不足以容纳顶部标签时，隐藏整组距离标注
-    val shouldDrawDistance = frame.width > widthLabelWidth
-
-    // 左侧距离文案测量结果
-    val heightTextLayout = textMeasurer.measure(text = heightText, style = textStyle)
-    // 左侧标签总宽（含内边距，旋转前）
-    val heightLabelWidth = heightTextLayout.size.width + topLabelPaddingHorizontalPx * 2f
-    // 左侧标签总高（含内边距，旋转前）
-    val heightLabelHeight = heightTextLayout.size.height + topLabelPaddingVerticalPx * 2f
-    // 左侧标签旋转中心点
-    val heightLabelCenter = Offset(leftLineX + 2.dp.toPx(), frame.center.y)
-    // 左侧标签左上角（旋转前）
-    val heightLabelTopLeft = Offset(
-        x = heightLabelCenter.x - heightLabelWidth / 2f,
-        y = heightLabelCenter.y - heightLabelHeight / 2f
-    )
-    // 旋转后左侧文字在竖线方向上的半径（用于断开竖线）
-    val heightLabelVerticalHalfSpan = heightTextLayout.size.width / 2f + lineTextGapPx
-    // 左侧竖线需要避让文字的顶部边界
-    val heightLabelBlockTop = (heightLabelCenter.y - heightLabelVerticalHalfSpan)
-        .coerceIn(frame.top, frame.bottom)
-    // 左侧竖线需要避让文字的底部边界
-    val heightLabelBlockBottom = (heightLabelCenter.y + heightLabelVerticalHalfSpan)
-        .coerceIn(frame.top, frame.bottom)
-
-    onDrawWithContent {
-        drawContent()
-        if (!shouldDrawDistance) return@onDrawWithContent
-
-        if (widthLabelBlockLeft > frame.left) {
-            drawLine(
-                color = guideColor,
-                start = Offset(frame.left, topLineY + tickLengthPx / 2),
-                end = Offset(widthLabelBlockLeft, topLineY + tickLengthPx / 2),
-                strokeWidth = strokePx
-            )
-        }
-        if (widthLabelBlockRight < frame.right) {
-            drawLine(
-                color = guideColor,
-                start = Offset(widthLabelBlockRight, topLineY + tickLengthPx / 2),
-                end = Offset(frame.right, topLineY + tickLengthPx / 2),
-                strokeWidth = strokePx
-            )
-        }
-        drawLine(
-            color = guideColor,
-            start = Offset(frame.left, topLineY),
-            end = Offset(frame.left, topLineY + tickLengthPx),
-            strokeWidth = strokePx
-        )
-        drawLine(
-            color = guideColor,
-            start = Offset(frame.right, topLineY),
-            end = Offset(frame.right, topLineY + tickLengthPx),
-            strokeWidth = strokePx
-        )
-
-        if (heightLabelBlockTop > frame.top) {
-            drawLine(
-                color = guideColor,
-                start = Offset(leftLineX + tickLengthPx / 2, frame.top - strokePx),
-                end = Offset(leftLineX + tickLengthPx / 2, heightLabelBlockTop + tickLengthPx / 2),
-                strokeWidth = strokePx
-            )
-        }
-        if (heightLabelBlockBottom < frame.bottom) {
-            drawLine(
-                color = guideColor,
-                start = Offset(leftLineX + tickLengthPx / 2, heightLabelBlockBottom + tickLengthPx / 2),
-                end = Offset(leftLineX + tickLengthPx / 2, frame.bottom + strokePx),
-                strokeWidth = strokePx
-            )
-        }
-        drawLine(
-            color = guideColor,
-            start = Offset(leftLineX, frame.top - strokePx),
-            end = Offset(leftLineX + tickLengthPx, frame.top - strokePx),
-            strokeWidth = strokePx
-        )
-        drawLine(
-            color = guideColor,
-            start = Offset(leftLineX, frame.bottom + strokePx),
-            end = Offset(leftLineX + tickLengthPx, frame.bottom + strokePx),
-            strokeWidth = strokePx
-        )
-
-        drawText(
-            textLayoutResult = widthTextLayout,
-            topLeft = Offset(
-                x = widthLabelLeft,
-                y = widthLabelTop
-            )
-        )
-
-        rotate(degrees = -90f, pivot = heightLabelCenter) {
-            drawText(
-                textLayoutResult = heightTextLayout,
-                topLeft = Offset(
-                    x = heightLabelTopLeft.x,
-                    y = heightLabelTopLeft.y,
-                )
-            )
-        }
-    }
 }
