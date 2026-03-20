@@ -133,11 +133,11 @@ fun MapCompose(
                 uiConfig = uiConfig
             )
             SelectionFrameOverlay(frame = resolvedFrame)
-            DistanceScaleOverlay(
-                frame = resolvedFrame,
-                distanceFormatter.format(widthMeters),
-                distanceFormatter.format(heightMeters)
-            )
+//            DistanceScaleOverlay(
+//                frame = resolvedFrame,
+//                distanceFormatter.format(widthMeters),
+//                distanceFormatter.format(heightMeters)
+//            )
         }
     }
 }
@@ -313,11 +313,17 @@ private fun SelectionFrameOverlay(
         Modifier
             .fillMaxSize()
             .drawWithCache {
+
+                println("1111111111111111")
+
                 onDrawWithContent {
+                    println("2222222222222222")
+
                     drawContent()
                     val selectionPath = Path().apply { addRect(frame) }
                     clipPath(path = selectionPath, clipOp = ClipOp.Difference) {
                         drawRect(color = maskColor, size = size)
+                        println("3333333333333333")
                     }
                     drawRect(
                         color = borderColor,
