@@ -53,23 +53,23 @@ private fun MapComposeScreen(
     bottomBarColor: Color,
 ) {
     Column(modifier = modifier) {
-        MapComposeTopBar(
-            color = titleBarColor,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        )
+//        MapComposeTopBar(
+//            color = titleBarColor,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(48.dp)
+//        )
         MapCompose(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         )
-        MapComposeBottomBar(
-            color = bottomBarColor,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(96.dp)
-        )
+//        MapComposeBottomBar(
+//            color = bottomBarColor,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(96.dp)
+//        )
     }
 }
 
