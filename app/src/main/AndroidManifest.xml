@@ -120,7 +120,7 @@
             android:name=".ScaleBarActivity"
             android:exported="false" />
         <activity
-            android:name=".MapComposeActivity"
+            android:name=".offline.MapComposeActivity"
             android:exported="false" />
         <activity
             android:name=".StreetViewActivity"

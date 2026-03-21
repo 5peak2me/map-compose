@@ -1,4 +1,4 @@
-package com.github.speak2me.app.compose.map
+package com.github.speak2me.app.compose.map.offline
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
