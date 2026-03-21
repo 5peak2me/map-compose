@@ -2,22 +2,24 @@ package com.github.speak2me.app.compose.map.offline.platform.amap
 
 import android.graphics.Point
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntSize
 import com.amap.api.maps.AMapUtils
+import com.amap.api.maps.CameraUpdate as AMapCameraUpdate
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.Projection
-import com.amap.api.maps.model.CameraPosition
+import com.amap.api.maps.model.CameraPosition as AMapCameraPosition
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
+import com.github.speak2me.app.compose.map.offline.platform.CameraPosition as CoreCameraPosition
 import com.github.speak2me.app.compose.map.offline.platform.CameraUpdate
 import com.github.speak2me.app.compose.map.offline.platform.GeoBounds
 import com.github.speak2me.app.compose.map.offline.platform.GeoPoint
-import com.github.speak2me.app.compose.map.offline.platform.GeoPolygon
 import com.github.speak2me.app.compose.map.offline.platform.MapCameraConstraint
-import com.github.speak2me.app.compose.map.offline.platform.MapController
+import com.github.speak2me.app.compose.map.offline.platform.MapCameraState
 import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
 import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
 import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
@@ -26,6 +28,8 @@ import com.github.speak2me.compose.map.amap.CameraPositionState
 import com.github.speak2me.compose.map.amap.MapProperties
 import com.github.speak2me.compose.map.amap.MapUiSettings
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class AMapPlatform : MapPlatform {
 
@@ -37,16 +41,18 @@ class AMapPlatform : MapPlatform {
     }
 
     @Composable
-    override fun rememberController(initialUpdate: CameraUpdate): MapController {
+    override fun rememberCameraState(initialUpdate: CameraUpdate): MapCameraState {
         val initialCenter = initialUpdate.resolveFallbackCenter()
         val initialZoom = initialUpdate.resolveFallbackZoom()
+        val scope = rememberCoroutineScope()
         val cameraState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(
+            position = AMapCameraPosition.fromLatLngZoom(
                 LatLng(initialCenter.latitude, initialCenter.longitude),
                 initialZoom
             )
         }
-        return AMapController(
+        return AMapCameraState(
+            coroutineScope = scope,
             cameraState = cameraState,
             initialUpdate = initialUpdate
         )
@@ -55,12 +61,12 @@ class AMapPlatform : MapPlatform {
     @Composable
     override fun MapView(
         modifier: Modifier,
-        controller: MapController,
+        cameraState: MapCameraState,
         cameraConstraint: MapCameraConstraint,
         uiConfig: MapUiConfig,
     ) {
-        val amapController = controller as? AMapController
-            ?: error("AMapPlatform requires AMapController")
+        val amapCameraState = cameraState as? AMapCameraState
+            ?: error("AMapPlatform requires AMapCameraState")
 
         val mapProperties = MapProperties(
             minZoomPreference = cameraConstraint.minZoom ?: 3f,
@@ -77,8 +83,8 @@ class AMapPlatform : MapPlatform {
             zoomControlsEnabled = uiConfig.zoomControlsEnabled
         )
         AMap(
-            modifier = modifier.onSizeChanged(amapController::onViewportChanged),
-            cameraPositionState = amapController.cameraState,
+            modifier = modifier.onSizeChanged(amapCameraState::onViewportChanged),
+            cameraPositionState = amapCameraState.cameraState,
             properties = mapProperties,
             uiSettings = mapUiSettings
         )
@@ -86,50 +92,56 @@ class AMapPlatform : MapPlatform {
 }
 
 @Stable
-private class AMapController(
+private class AMapCameraState(
+    private val coroutineScope: CoroutineScope,
     val cameraState: CameraPositionState,
     initialUpdate: CameraUpdate,
-) : MapController {
+) : MapCameraState {
     private var viewportSize: IntSize = IntSize.Zero
-    private var pendingFitUpdate: CameraUpdate? = when (initialUpdate) {
-        is CameraUpdate.FitBounds -> initialUpdate
-        is CameraUpdate.FitPolygon -> initialUpdate
-        is CameraUpdate.CenterZoom -> null
-    }
+    private var pendingFitRequest: PendingFitRequest? = initialUpdate.toPendingFitRequestOrNull()
 
-    override val zoom: Float
-        get() = cameraState.position.zoom
+    override val position: CoreCameraPosition
+        get() = cameraState.position.toCoreCameraPosition()
 
-    override val center: GeoPoint
-        get() = cameraState.position.target.toGeoPoint()
+    override val isMoving: Boolean
+        get() = cameraState.isMoving
 
     override val projection: MapScreenProjection?
         get() = cameraState.projection?.let(::AMapScreenProjection)
 
-    override fun move(update: CameraUpdate, animated: Boolean) {
+    override fun move(update: CameraUpdate) {
         when (update) {
-            is CameraUpdate.CenterZoom -> {
-                val current = cameraState.position
-                cameraState.move(
-                    CameraUpdateFactory.newCameraPosition(
-                        CameraPosition(
-                            LatLng(update.center.latitude, update.center.longitude),
-                            update.zoom,
-                            current.tilt,
-                            current.bearing
-                        )
-                    )
-                )
+            is CameraUpdate.Center -> {
+                cameraState.move(update.toPlatformUpdate(cameraState.position))
             }
 
-            is CameraUpdate.FitBounds -> {
+            is CameraUpdate.AreaCentered -> {
                 applyFitBounds(update.bounds, update.paddingPx, pendingUpdate = update)
             }
+            else -> return
+        }
+    }
 
-            is CameraUpdate.FitPolygon -> {
-                val bounds = update.polygon.toGeoBoundsOrNull() ?: return
-                applyFitBounds(bounds, update.paddingPx, pendingUpdate = update)
+    override suspend fun animate(update: CameraUpdate, durationMs: Int) {
+        when (update) {
+            is CameraUpdate.Center -> {
+                cameraState.animate(update.toPlatformUpdate(cameraState.position), durationMs)
             }
+
+            is CameraUpdate.AreaCentered -> {
+                val fitUpdate = buildFitBoundsUpdate(update.bounds, update.paddingPx)
+                if (fitUpdate == null) {
+                    pendingFitRequest = PendingFitRequest(
+                        update = update,
+                        animated = true,
+                        durationMs = durationMs
+                    )
+                    return
+                }
+                pendingFitRequest = null
+                cameraState.animate(fitUpdate, durationMs)
+            }
+            else -> return
         }
     }
 
@@ -138,25 +150,48 @@ private class AMapController(
         paddingPx: Int,
         pendingUpdate: CameraUpdate,
     ) {
-        if (viewportSize.width <= 0 || viewportSize.height <= 0) {
-            pendingFitUpdate = pendingUpdate
+        val fitUpdate = buildFitBoundsUpdate(bounds, paddingPx)
+        if (fitUpdate == null) {
+            pendingFitRequest = PendingFitRequest(
+                update = pendingUpdate,
+                animated = false
+            )
             return
         }
-        pendingFitUpdate = null
-        cameraState.move(
-            CameraUpdateFactory.newLatLngBounds(
-                bounds.toLatLngBounds(),
-                paddingPx
-            )
+        pendingFitRequest = null
+        cameraState.move(fitUpdate)
+    }
+
+    private fun buildFitBoundsUpdate(
+        bounds: GeoBounds,
+        paddingPx: Int,
+    ): AMapCameraUpdate? {
+        if (viewportSize.width <= 0 || viewportSize.height <= 0) return null
+        return CameraUpdateFactory.newLatLngBounds(
+            bounds.toLatLngBounds(),
+            paddingPx
         )
     }
 
     fun onViewportChanged(size: IntSize) {
         viewportSize = size
-        val request = pendingFitUpdate ?: return
-        move(update = request, animated = false)
+        val request = pendingFitRequest ?: return
+        pendingFitRequest = null
+        if (request.animated) {
+            coroutineScope.launch {
+                animate(update = request.update, durationMs = request.durationMs)
+            }
+        } else {
+            move(update = request.update)
+        }
     }
 }
+
+private data class PendingFitRequest(
+    val update: CameraUpdate,
+    val animated: Boolean,
+    val durationMs: Int = Int.MAX_VALUE,
+)
 
 private class AMapScreenProjection(
     private val projection: Projection,
@@ -179,40 +214,42 @@ private fun GeoBounds.toLatLngBounds(): LatLngBounds {
         .build()
 }
 
-private fun GeoPolygon.toGeoBoundsOrNull(): GeoBounds? {
-    if (points.isEmpty()) return null
-    var minLat = Double.POSITIVE_INFINITY
-    var maxLat = Double.NEGATIVE_INFINITY
-    var minLng = Double.POSITIVE_INFINITY
-    var maxLng = Double.NEGATIVE_INFINITY
-    points.forEach { point ->
-        minLat = minOf(minLat, point.latitude)
-        maxLat = maxOf(maxLat, point.latitude)
-        minLng = minOf(minLng, point.longitude)
-        maxLng = maxOf(maxLng, point.longitude)
-    }
-    return GeoBounds(
-        southwest = GeoPoint(latitude = minLat, longitude = minLng),
-        northeast = GeoPoint(latitude = maxLat, longitude = maxLng)
-    )
-}
-
 private fun CameraUpdate.resolveFallbackCenter(): GeoPoint = when (this) {
-    is CameraUpdate.CenterZoom -> center
-    is CameraUpdate.FitBounds -> GeoPoint(
+    is CameraUpdate.Center -> center
+    is CameraUpdate.AreaCentered -> GeoPoint(
         latitude = (bounds.southwest.latitude + bounds.northeast.latitude) / 2.0,
         longitude = (bounds.southwest.longitude + bounds.northeast.longitude) / 2.0
     )
-    is CameraUpdate.FitPolygon -> polygon.toGeoBoundsOrNull()?.let { bounds ->
-        GeoPoint(
-            latitude = (bounds.southwest.latitude + bounds.northeast.latitude) / 2.0,
-            longitude = (bounds.southwest.longitude + bounds.northeast.longitude) / 2.0
-        )
-    } ?: GeoPoint(latitude = 0.0, longitude = 0.0)
+    else -> GeoPoint(latitude = 0.0, longitude = 0.0)
 }
 
 private fun CameraUpdate.resolveFallbackZoom(): Float = when (this) {
-    is CameraUpdate.CenterZoom -> zoom
-    is CameraUpdate.FitBounds -> 12f
-    is CameraUpdate.FitPolygon -> 12f
+    is CameraUpdate.Center -> zoom
+    is CameraUpdate.AreaCentered -> 12f
+    else -> 12f
 }
+
+private fun CameraUpdate.toPendingFitRequestOrNull(): PendingFitRequest? = when (this) {
+    is CameraUpdate.AreaCentered -> PendingFitRequest(update = this, animated = false)
+    else -> null
+}
+
+private fun CameraUpdate.Center.toPlatformUpdate(
+    currentPosition: AMapCameraPosition,
+): AMapCameraUpdate {
+    return CameraUpdateFactory.newCameraPosition(
+        AMapCameraPosition(
+            LatLng(center.latitude, center.longitude),
+            zoom,
+            currentPosition.tilt,
+            currentPosition.bearing
+        )
+    )
+}
+
+private fun AMapCameraPosition.toCoreCameraPosition(): CoreCameraPosition = CoreCameraPosition(
+    center = target.toGeoPoint(),
+    zoom = zoom,
+    tilt = tilt,
+    bearing = bearing
+)

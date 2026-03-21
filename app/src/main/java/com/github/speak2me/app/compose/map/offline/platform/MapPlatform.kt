@@ -17,30 +17,28 @@ data class GeoPolygon(
     val points: List<GeoPoint>,
 )
 
-sealed interface CameraUpdate {
+data class CameraPosition(
+    val center: GeoPoint,
+    val zoom: Float,
+    val tilt: Float = 0f,
+    val bearing: Float = 0f,
+)
+
+interface CameraUpdate {
     /**
      * 将相机移动到指定中心点与缩放级别。
      */
-    data class CenterZoom(
+    data class Center(
         val center: GeoPoint,
         val zoom: Float,
     ) : CameraUpdate
 
     /**
-     * 将相机移动到可完整展示指定地理范围的位置。
+     * 将相机移动到可完整展示指定地理范围的位置，且该区域在视口中居中展示。
      * @param paddingPx 额外边距（像素）。
      */
-    data class FitBounds(
+    data class AreaCentered(
         val bounds: GeoBounds,
-        val paddingPx: Int = 0,
-    ) : CameraUpdate
-
-    /**
-     * 将相机移动到可完整展示指定多边形区域的位置。
-     * @param paddingPx 额外边距（像素）。
-     */
-    data class FitPolygon(
-        val polygon: GeoPolygon,
         val paddingPx: Int = 0,
     ) : CameraUpdate
 }
@@ -68,16 +66,28 @@ interface MapScreenProjection {
     fun fromScreenLocation(x: Int, y: Int): GeoPoint?
 }
 
-interface MapController {
+interface MapCameraState {
+    /**
+     * 当前地图相机位置状态。
+     */
+    val position: CameraPosition
+
+    /**
+     * 当前地图是否处于相机移动中。
+     */
+    val isMoving: Boolean
+
     /**
      * 当前地图缩放级别。
      */
     val zoom: Float
+        get() = position.zoom
 
     /**
      * 当前地图中心点坐标。
      */
     val center: GeoPoint
+        get() = position.center
 
     /**
      * 当前可用的屏幕投影能力，地图未就绪时可能为 null。
@@ -85,18 +95,21 @@ interface MapController {
     val projection: MapScreenProjection?
 
     /**
-     * 应用相机更新命令。
+     * 立即应用相机更新命令。
      */
-    fun move(update: CameraUpdate, animated: Boolean = false)
+    fun move(update: CameraUpdate)
+
+    /**
+     * 以动画方式应用相机更新命令。
+     * @param durationMs 动画时长（毫秒）。默认使用底层 SDK 的默认时长。
+     */
+    suspend fun animate(update: CameraUpdate, durationMs: Int = Int.MAX_VALUE)
 
     /**
      * 立即移动地图相机到指定中心点与缩放级别（兼容）。
      */
     fun moveTo(center: GeoPoint, zoom: Float) {
-        move(
-            update = CameraUpdate.CenterZoom(center = center, zoom = zoom),
-            animated = false
-        )
+        move(update = CameraUpdate.Center(center = center, zoom = zoom))
     }
 
     /**
@@ -104,10 +117,7 @@ interface MapController {
      * @param paddingPx 额外边距（像素）。
      */
     fun moveTo(bounds: GeoBounds, paddingPx: Int = 0) {
-        move(
-            update = CameraUpdate.FitBounds(bounds = bounds, paddingPx = paddingPx),
-            animated = false
-        )
+        move(update = CameraUpdate.AreaCentered(bounds = bounds, paddingPx = paddingPx))
     }
 
     /**
@@ -115,10 +125,9 @@ interface MapController {
      * @param paddingPx 额外边距（像素）。
      */
     fun moveTo(polygon: GeoPolygon, paddingPx: Int = 0) {
-        move(
-            update = CameraUpdate.FitPolygon(polygon = polygon, paddingPx = paddingPx),
-            animated = false
-        )
+        polygon.toGeoBoundsOrNull()?.let { bounds ->
+            move(update = CameraUpdate.AreaCentered(bounds = bounds, paddingPx = paddingPx))
+        }
     }
 }
 
@@ -130,22 +139,22 @@ interface MapPlatform {
     fun distanceMeters(from: GeoPoint, to: GeoPoint): Float
 
     /**
-     * 创建并记忆平台地图控制器。
+     * 创建并记忆平台地图相机状态。
      */
     @Composable
-    fun rememberController(
+    fun rememberCameraState(
         initialUpdate: CameraUpdate,
-    ): MapController
+    ): MapCameraState
 
     /**
-     * 创建并记忆平台地图控制器（兼容：中心点 + 缩放级别）。
+     * 创建并记忆平台地图相机状态（兼容：中心点 + 缩放级别）。
      */
     @Composable
-    fun rememberController(
+    fun rememberCameraState(
         initialCenter: GeoPoint,
         initialZoom: Float,
-    ): MapController = rememberController(
-        initialUpdate = CameraUpdate.CenterZoom(
+    ): MapCameraState = rememberCameraState(
+        initialUpdate = CameraUpdate.Center(
             center = initialCenter,
             zoom = initialZoom
         )
@@ -157,8 +166,26 @@ interface MapPlatform {
     @Composable
     fun MapView(
         modifier: Modifier,
-        controller: MapController,
+        cameraState: MapCameraState,
         cameraConstraint: MapCameraConstraint,
         uiConfig: MapUiConfig,
+    )
+}
+
+private fun GeoPolygon.toGeoBoundsOrNull(): GeoBounds? {
+    if (points.isEmpty()) return null
+    var minLat = Double.POSITIVE_INFINITY
+    var maxLat = Double.NEGATIVE_INFINITY
+    var minLng = Double.POSITIVE_INFINITY
+    var maxLng = Double.NEGATIVE_INFINITY
+    points.forEach { point ->
+        minLat = minOf(minLat, point.latitude)
+        maxLat = maxOf(maxLat, point.latitude)
+        minLng = minOf(minLng, point.longitude)
+        maxLng = maxOf(maxLng, point.longitude)
+    }
+    return GeoBounds(
+        southwest = GeoPoint(latitude = minLat, longitude = minLng),
+        northeast = GeoPoint(latitude = maxLat, longitude = maxLng)
     )
 }
