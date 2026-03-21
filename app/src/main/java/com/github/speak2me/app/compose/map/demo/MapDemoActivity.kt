@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
-import com.github.speak2me.app.compose.map.MapComposeActivity
+import com.github.speak2me.app.compose.map.offline.MapComposeActivity
 import com.github.speak2me.app.compose.map.R
 import com.github.speak2me.app.compose.map.demo.amap.AMapActivity
 import com.github.speak2me.app.compose.map.demo.baidu.BaiduMapActivity

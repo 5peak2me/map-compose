@@ -1,4 +1,4 @@
-package com.github.speak2me.app.compose.map
+package com.github.speak2me.app.compose.map.offline
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -31,12 +31,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.speak2me.app.compose.map.platform.GeoPoint
-import com.github.speak2me.app.compose.map.platform.MapCameraConstraint
-import com.github.speak2me.app.compose.map.platform.MapPlatform
-import com.github.speak2me.app.compose.map.platform.MapScreenProjection
-import com.github.speak2me.app.compose.map.platform.MapUiConfig
-import com.github.speak2me.app.compose.map.platform.amap.AMapPlatform
+import com.github.speak2me.app.compose.map.offline.platform.GeoPoint
+import com.github.speak2me.app.compose.map.offline.platform.MapCameraConstraint
+import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
+import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
+import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
+import com.github.speak2me.app.compose.map.offline.platform.amap.AMapPlatform
 import java.util.Locale
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -91,7 +91,7 @@ fun MapCompose(
 
     BoxWithConstraints(modifier = modifier) {
         val density = LocalDensity.current
-        val containerSize = rememberContainerSizePx(maxWidth, maxHeight, density)
+        val containerSize = rememberContainerSize(maxWidth, maxHeight, density)
         val screenAspectRatio = rememberAspectRatio(containerSize)
         val currentZoom = mapController.zoom
 
@@ -104,26 +104,33 @@ fun MapCompose(
             distanceCalculator,
             mapPlatform
         ) {
-            val baseFrame = frameResolver.createInitialFrame(containerSize, screenAspectRatio)
-            val baseFrameWidthMeters = distanceCalculator.calculateWidthMeters(
+            val baseFrame = frameResolver.resolveFrame(
+                containerSize = containerSize,
+                aspectRatio = screenAspectRatio
+            )
+            val baseFrameWidthMeters = distanceCalculator.calculateDistanceMeters(
                 projection = mapController.projection,
                 frame = baseFrame,
+                axis = DistanceAxis.Horizontal,
                 mapPlatform = mapPlatform
             )
             frameResolver.resolveFrame(
-                initialFrame = baseFrame,
-                initialWidthMeters = baseFrameWidthMeters
+                containerSize = containerSize,
+                aspectRatio = screenAspectRatio,
+                frameWidthMeters = baseFrameWidthMeters
             )
         }
 
-        val widthMeters = distanceCalculator.calculateWidthMeters(
+        val widthMeters = distanceCalculator.calculateDistanceMeters(
             projection = mapController.projection,
             frame = frame,
+            axis = DistanceAxis.Horizontal,
             mapPlatform = mapPlatform
         )
-        val heightMeters = distanceCalculator.calculateHeightMeters(
+        val heightMeters = distanceCalculator.calculateDistanceMeters(
             projection = mapController.projection,
             frame = frame,
+            axis = DistanceAxis.Vertical,
             mapPlatform = mapPlatform
         )
 
@@ -136,10 +143,14 @@ fun MapCompose(
         ) {
             if (isInitCalibrated || containerSize.width <= 0) return@LaunchedEffect
             val calibrationFrame =
-                frameResolver.createInitialFrame(containerSize, screenAspectRatio)
-            val currentDistance = distanceCalculator.calculateWidthMeters(
+                frameResolver.resolveFrame(
+                    containerSize = containerSize,
+                    aspectRatio = screenAspectRatio
+                )
+            val currentDistance = distanceCalculator.calculateDistanceMeters(
                 projection = mapController.projection,
                 frame = calibrationFrame,
+                axis = DistanceAxis.Horizontal,
                 mapPlatform = mapPlatform
             ) ?: return@LaunchedEffect
             if (currentDistance <= 0f) return@LaunchedEffect
@@ -167,54 +178,83 @@ fun MapCompose(
             SelectionFrameOverlay(frame = frame)
             DistanceScaleOverlay(
                 frame = frame,
-                distanceFormatter.format(widthMeters),
-                distanceFormatter.format(heightMeters)
+                widthMeters?.let(distanceFormatter::format) ?: "--",
+                heightMeters?.let(distanceFormatter::format) ?: "--"
             )
         }
     }
 }
 
 /**
- * 边框求解器：对外暴露单一入口，内部可组合初始策略与缩放策略。
+ * 边框求解器：对外暴露单一入口，初始化可以视作 frameWidthMeters 为空时的特殊缩放。
  */
 interface FrameResolver {
     /**
-     * 计算初始边框。
+     * 基于容器尺寸与可选宽度距离，计算当前应显示的边框。
+     * frameWidthMeters 为空时返回初始边框；不为空时按约束进行缩放。
      */
-    fun createInitialFrame(containerSize: IntSize, screenAspectRatio: Float): Rect
-
-    /**
-     * 基于初始边框和当前宽度距离，计算当前应显示的边框。
-     */
-    fun resolveFrame(initialFrame: Rect, initialWidthMeters: Float?): Rect
+    fun resolveFrame(
+        containerSize: IntSize,
+        aspectRatio: Float,
+        frameWidthMeters: Float? = null,
+    ): Rect
 }
 
 class DefaultFrameResolver(
     private val maxDistanceMeters: Float,
 ) : FrameResolver {
-    override fun createInitialFrame(containerSize: IntSize, screenAspectRatio: Float): Rect {
+    override fun resolveFrame(
+        containerSize: IntSize,
+        aspectRatio: Float,
+        frameWidthMeters: Float?,
+    ): Rect {
         val screenWidth = containerSize.width.toFloat()
-        val margin = screenWidth * INITIAL_MARGIN_RATIO
-        val width = screenWidth - margin * 2f
-        val height = width * screenAspectRatio
+        val screenHeight = containerSize.height.toFloat()
+        val isPortrait = screenHeight > screenWidth
+
+        val baseLength: Float
+        val isWidthBase: Boolean
+
+        if (isPortrait) {
+            baseLength = screenWidth
+            isWidthBase = true
+        } else {
+            baseLength = screenHeight
+            isWidthBase = false
+        }
+
+        val margin = baseLength * INITIAL_MARGIN_RATIO
+        val length = baseLength - margin * 2f
+        val other = length * aspectRatio
+
+        val width: Float
+        val height: Float
+        if (isWidthBase) {
+            width = length
+            height = other
+        } else {
+            width = other
+            height = length
+        }
+
         val halfWidth = width / 2f
         val halfHeight = height / 2f
         val centerX = screenWidth / 2f
         val centerY = margin + halfHeight
-        return Rect(
+
+        val initialFrame = Rect(
             left = centerX - halfWidth,
             top = centerY - halfHeight,
             right = centerX + halfWidth,
             bottom = centerY + halfHeight
         )
-    }
 
-    override fun resolveFrame(initialFrame: Rect, initialWidthMeters: Float?): Rect {
+        if (frameWidthMeters == null) return initialFrame
         val safeMaxDistanceMeters = maxDistanceMeters.coerceAtLeast(MIN_WIDTH_METERS)
-        if (initialWidthMeters == null || initialWidthMeters <= safeMaxDistanceMeters) {
+        if (frameWidthMeters <= safeMaxDistanceMeters) {
             return initialFrame
         }
-        val scale = (safeMaxDistanceMeters / initialWidthMeters).coerceIn(0f, 1f)
+        val scale = (safeMaxDistanceMeters / frameWidthMeters).coerceIn(0f, 1f)
         return initialFrame.scaleFromCenter(scale)
     }
 }
@@ -224,49 +264,54 @@ class DefaultFrameResolver(
  */
 interface DistanceCalculator {
     /**
-     * 计算指定边框对应的真实宽度（米）。
+     * 计算指定边框在给定方向上的真实距离（米）。
      */
-    fun calculateWidthMeters(
+    fun calculateDistanceMeters(
         projection: MapScreenProjection?,
         frame: Rect,
-        mapPlatform: MapPlatform,
-    ): Float?
-
-    /**
-     * 计算指定边框对应的真实高度（米）。
-     */
-    fun calculateHeightMeters(
-        projection: MapScreenProjection?,
-        frame: Rect,
+        axis: DistanceAxis,
         mapPlatform: MapPlatform,
     ): Float?
 }
 
 class PlatformDistanceCalculator : DistanceCalculator {
-    override fun calculateWidthMeters(
+    override fun calculateDistanceMeters(
         projection: MapScreenProjection?,
         frame: Rect,
-        mapPlatform: MapPlatform,
-    ): Float? {
-        projection ?: return null
-        val centerY = frame.center.y.roundToInt()
-        val left = projection.fromScreenLocation(frame.left.roundToInt(), centerY) ?: return null
-        val right = projection.fromScreenLocation(frame.right.roundToInt(), centerY) ?: return null
-        return mapPlatform.distanceMeters(left, right)
-    }
-
-    override fun calculateHeightMeters(
-        projection: MapScreenProjection?,
-        frame: Rect,
+        axis: DistanceAxis,
         mapPlatform: MapPlatform,
     ): Float? {
         projection ?: return null
         val centerX = frame.center.x.roundToInt()
-        val top = projection.fromScreenLocation(centerX, frame.top.roundToInt()) ?: return null
-        val bottom =
-            projection.fromScreenLocation(centerX, frame.bottom.roundToInt()) ?: return null
-        return mapPlatform.distanceMeters(top, bottom)
+        val centerY = frame.center.y.roundToInt()
+        val startX: Int
+        val startY: Int
+        val endX: Int
+        val endY: Int
+        when (axis) {
+            DistanceAxis.Horizontal -> {
+                startX = frame.left.roundToInt()
+                startY = centerY
+                endX = frame.right.roundToInt()
+                endY = centerY
+            }
+
+            DistanceAxis.Vertical -> {
+                startX = centerX
+                startY = frame.top.roundToInt()
+                endX = centerX
+                endY = frame.bottom.roundToInt()
+            }
+        }
+        val start = projection.fromScreenLocation(startX, startY) ?: return null
+        val end = projection.fromScreenLocation(endX, endY) ?: return null
+        return mapPlatform.distanceMeters(start, end)
     }
+}
+
+enum class DistanceAxis {
+    Horizontal,
+    Vertical
 }
 
 /**
@@ -276,44 +321,35 @@ interface DistanceFormatter {
     /**
      * 将米单位距离转换为用户可读文案。
      */
-    fun format(distanceMeters: Float?): String
+    fun format(distanceMeters: Float): String
 }
 
 class KilometerDistanceFormatter(
     private val minDistanceMeters: Float = MIN_WIDTH_METERS,
     private val maxDistanceMeters: Float = DEFAULT_MAX_DISTANCE_METERS,
 ) : DistanceFormatter {
-    override fun format(distanceMeters: Float?): String {
-        if (distanceMeters == null) return "--"
-        val safeMinDistanceMeters = minDistanceMeters.coerceAtLeast(0f)
-        val safeMaxDistanceMeters = maxDistanceMeters.coerceAtLeast(safeMinDistanceMeters)
-        val kilometers = distanceMeters
-            .coerceAtMost(safeMaxDistanceMeters)
-            .coerceAtLeast(safeMinDistanceMeters) / 1000f
-        return "%.2f公里".format(
-            Locale.getDefault(),
-            kilometers
-        )
+    override fun format(distanceMeters: Float): String {
+        val kilometers = distanceMeters.coerceIn(minDistanceMeters, maxDistanceMeters) / 1000f
+        return "%.2f公里".format(Locale.getDefault(), kilometers)
     }
 }
 
 private fun log2(value: Float): Float = (ln(value.toDouble()) / ln(2.0)).toFloat()
 
 @Composable
-private fun rememberContainerSizePx(
-    maxWidth: Dp,
-    maxHeight: Dp,
+private fun rememberContainerSize(
+    width: Dp,
+    height: Dp,
     density: Density,
-): IntSize = remember(maxWidth, maxHeight, density) {
+): IntSize = remember(width, height, density) {
     with(density) {
-        IntSize(maxWidth.roundToPx(), maxHeight.roundToPx())
+        IntSize(width.roundToPx(), height.roundToPx())
     }
 }
 
 @Composable
 private fun rememberAspectRatio(containerSize: IntSize): Float = remember(containerSize) {
-    if (containerSize.width <= 0) 1f
-    else containerSize.height.toFloat() / containerSize.width.toFloat()
+    containerSize.height.toFloat() / containerSize.width.toFloat()
 }
 
 private fun Rect.scaleFromCenter(scale: Float): Rect {
@@ -341,15 +377,15 @@ private fun SelectionFrameOverlay(
             .drawWithCache {
 
                 val selectionPath = Path().apply { addRect(frame) }
-//                println("1111111111111111 $selectionPath")
+                println("1111111111111111 $selectionPath")
 
                 onDrawWithContent {
-//                    println("2222222222222222")
+                    println("2222222222222222")
 
                     drawContent()
                     clipPath(path = selectionPath, clipOp = ClipOp.Difference) {
                         drawRect(color = maskColor, size = size)
-//                        println("3333333333333333")
+                        println("3333333333333333")
                     }
                     drawRect(
                         color = borderColor,
@@ -458,7 +494,7 @@ private fun DistanceScaleOverlay(
 
                     if (!shouldDrawDistance) return@onDrawWithContent
 
-//                    println("xxxxxxxxxxx")
+                    println("xxxxxxxxxxx")
 
                     // horizontal: |-----16KM-----|
                     drawLine(
@@ -520,7 +556,7 @@ private fun DistanceScaleOverlay(
                             textLayoutResult = heightTextLayout,
                             topLeft = Offset(
                                 x = heightLabelCenter.x - heightLabelWidth / 2f,
-                                y = heightLabelCenter.y - heightLabelHeight / 4
+                                y = heightLabelCenter.y - heightLabelHeight / 4f,
                             )
                         )
                     }

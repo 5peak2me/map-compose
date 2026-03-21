@@ -1,4 +1,4 @@
-package com.github.speak2me.app.compose.map.platform
+package com.github.speak2me.app.compose.map.offline.platform
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

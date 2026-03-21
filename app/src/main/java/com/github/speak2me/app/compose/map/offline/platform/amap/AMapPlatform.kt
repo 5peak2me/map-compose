@@ -1,4 +1,4 @@
-package com.github.speak2me.app.compose.map.platform.amap
+package com.github.speak2me.app.compose.map.offline.platform.amap
 
 import android.graphics.Point
 import androidx.compose.runtime.Composable
@@ -12,15 +12,15 @@ import com.amap.api.maps.Projection
 import com.amap.api.maps.model.CameraPosition
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
-import com.github.speak2me.app.compose.map.platform.CameraUpdate
-import com.github.speak2me.app.compose.map.platform.GeoBounds
-import com.github.speak2me.app.compose.map.platform.GeoPoint
-import com.github.speak2me.app.compose.map.platform.GeoPolygon
-import com.github.speak2me.app.compose.map.platform.MapCameraConstraint
-import com.github.speak2me.app.compose.map.platform.MapController
-import com.github.speak2me.app.compose.map.platform.MapPlatform
-import com.github.speak2me.app.compose.map.platform.MapScreenProjection
-import com.github.speak2me.app.compose.map.platform.MapUiConfig
+import com.github.speak2me.app.compose.map.offline.platform.CameraUpdate
+import com.github.speak2me.app.compose.map.offline.platform.GeoBounds
+import com.github.speak2me.app.compose.map.offline.platform.GeoPoint
+import com.github.speak2me.app.compose.map.offline.platform.GeoPolygon
+import com.github.speak2me.app.compose.map.offline.platform.MapCameraConstraint
+import com.github.speak2me.app.compose.map.offline.platform.MapController
+import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
+import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
+import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
 import com.github.speak2me.compose.map.amap.AMap
 import com.github.speak2me.compose.map.amap.CameraPositionState
 import com.github.speak2me.compose.map.amap.MapProperties
