@@ -17,8 +17,8 @@ package com.github.speak2me.compose.map.amap.ktx.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.test.assertTrue
 
 internal class TileOverlayOptionsTest {
 

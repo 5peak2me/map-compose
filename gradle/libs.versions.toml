@@ -49,7 +49,7 @@ mockitoKotlin = { group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin"
 
 #map-amap = { module = "com.amap.api:3dmap", version = "10.0.600" }
 # https://central.sonatype.com/artifact/com.amap.api/3dmap-location-search
-map-amap-location-search = { module = "com.amap.api:3dmap-location-search", version = "10.1.600_loc6.5.1_sea9.7.4" }
+map-amap-location-search = { module = "com.amap.api:3dmap-location-search", version = "11.1.000_loc11.1.000_sea9.7.4" }
 
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Map
 map-baidu = { module = "com.baidu.lbsyun:BaiduMapSDK_Map", version.ref = "map-baidu" }
@@ -61,9 +61,9 @@ map-baidu-util = { module = "com.baidu.lbsyun:BaiduMapSDK_Util", version.ref = "
 map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.6.6.2" }
 
 # https://central.sonatype.com/artifact/com.tencent.map/tencent-map-vector-sdk
-map-tencent = "com.tencent.map:tencent-map-vector-sdk:6.6.4.251121.6d0d4a80.176437250"
+map-tencent = "com.tencent.map:tencent-map-vector-sdk:6.9.0.260312.237cbc9d.205120930"
 # https://central.sonatype.com/artifact/com.tencent.openmap/foundation
-map-tencent-foundation = "com.tencent.openmap:foundation:0.7.0.92a115a"
+map-tencent-foundation = "com.tencent.openmap:foundation:0.9.0.e5ea763-pro"
 # https://central.sonatype.com/artifact/com.tencent.map/sdk-utilities
 map-tencent-utilities = "com.tencent.map:sdk-utilities:1.0.12"
 # https://central.sonatype.com/artifact/com.tencent.map.geolocation/TencentLocationSdk-openplatform
