@@ -8,6 +8,43 @@ data class GeoPoint(
     val longitude: Double,
 )
 
+data class GeoBounds(
+    val southwest: GeoPoint,
+    val northeast: GeoPoint,
+)
+
+data class GeoPolygon(
+    val points: List<GeoPoint>,
+)
+
+sealed interface CameraUpdate {
+    /**
+     * 将相机移动到指定中心点与缩放级别。
+     */
+    data class CenterZoom(
+        val center: GeoPoint,
+        val zoom: Float,
+    ) : CameraUpdate
+
+    /**
+     * 将相机移动到可完整展示指定地理范围的位置。
+     * @param paddingPx 额外边距（像素）。
+     */
+    data class FitBounds(
+        val bounds: GeoBounds,
+        val paddingPx: Int = 0,
+    ) : CameraUpdate
+
+    /**
+     * 将相机移动到可完整展示指定多边形区域的位置。
+     * @param paddingPx 额外边距（像素）。
+     */
+    data class FitPolygon(
+        val polygon: GeoPolygon,
+        val paddingPx: Int = 0,
+    ) : CameraUpdate
+}
+
 data class MapCameraConstraint(
     val minZoom: Float? = null,
     val maxZoom: Float? = null,
@@ -48,9 +85,41 @@ interface MapController {
     val projection: MapScreenProjection?
 
     /**
-     * 立即移动地图相机到指定中心点与缩放级别。
+     * 应用相机更新命令。
      */
-    fun moveTo(center: GeoPoint, zoom: Float)
+    fun move(update: CameraUpdate, animated: Boolean = false)
+
+    /**
+     * 立即移动地图相机到指定中心点与缩放级别（兼容）。
+     */
+    fun moveTo(center: GeoPoint, zoom: Float) {
+        move(
+            update = CameraUpdate.CenterZoom(center = center, zoom = zoom),
+            animated = false
+        )
+    }
+
+    /**
+     * 立即移动地图相机以完整展示指定地理范围（兼容）。
+     * @param paddingPx 额外边距（像素）。
+     */
+    fun moveTo(bounds: GeoBounds, paddingPx: Int = 0) {
+        move(
+            update = CameraUpdate.FitBounds(bounds = bounds, paddingPx = paddingPx),
+            animated = false
+        )
+    }
+
+    /**
+     * 立即移动地图相机以完整展示指定多边形区域（兼容）。
+     * @param paddingPx 额外边距（像素）。
+     */
+    fun moveTo(polygon: GeoPolygon, paddingPx: Int = 0) {
+        move(
+            update = CameraUpdate.FitPolygon(polygon = polygon, paddingPx = paddingPx),
+            animated = false
+        )
+    }
 }
 
 interface MapPlatform {
@@ -65,9 +134,22 @@ interface MapPlatform {
      */
     @Composable
     fun rememberController(
+        initialUpdate: CameraUpdate,
+    ): MapController
+
+    /**
+     * 创建并记忆平台地图控制器（兼容：中心点 + 缩放级别）。
+     */
+    @Composable
+    fun rememberController(
         initialCenter: GeoPoint,
         initialZoom: Float,
-    ): MapController
+    ): MapController = rememberController(
+        initialUpdate = CameraUpdate.CenterZoom(
+            center = initialCenter,
+            zoom = initialZoom
+        )
+    )
 
     /**
      * 渲染平台地图视图。
