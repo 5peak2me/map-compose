@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.speak2me.app.compose.map.offline.platform.GeoBounds
 import com.github.speak2me.app.compose.map.offline.platform.GeoPoint
 import com.github.speak2me.app.compose.map.offline.platform.MapCameraConstraint
+import com.github.speak2me.app.compose.map.offline.platform.MapCameraState
 import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
 import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
 import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
@@ -42,7 +44,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.ln
+import kotlin.math.log2
 import kotlin.math.roundToInt
 
 private const val MIN_WIDTH_METERS = 16_000f
@@ -57,8 +59,12 @@ typealias FrameDistanceMeters = Size
 fun MapCompose(
     modifier: Modifier = Modifier,
     mapPlatform: MapPlatform = remember { AMapPlatform() },
+    cameraState: MapCameraState = mapPlatform.rememberCameraState(
+        initialCenter = defaultCenter,
+        initialZoom = 12f
+    ),
     maxDistanceMeters: Float = DEFAULT_MAX_DISTANCE_METERS,
-    onCameraChange: ((center: GeoPoint, zoom: Float) -> Unit)? = null,
+    onCameraChange: ((center: GeoPoint, zoom: Float, bounds: GeoBounds) -> Unit)? = null,
     frameResolver: FrameResolver = remember(maxDistanceMeters) {
         DefaultFrameResolver(maxDistanceMeters = maxDistanceMeters)
     },
@@ -70,30 +76,29 @@ fun MapCompose(
         )
     },
 ) {
-    val mapController = mapPlatform.rememberController(
-        initialCenter = defaultCenter,
-        initialZoom = 12f
-    )
     val uiConfig = remember { MapUiConfig() }
     var isInitCalibrated by remember { mutableStateOf(false) }
     var maxZoomLimit by remember { mutableStateOf<Float?>(null) }
-
-    LaunchedEffect(mapController, onCameraChange) {
-        val callback = onCameraChange ?: return@LaunchedEffect
-        snapshotFlow {
-            mapController.projection?.let { mapController.center to mapController.zoom }
-        }
-            .filterNotNull()
-            .distinctUntilChanged()
-            .collect { (center, zoom) ->
-                callback(center, zoom)
-            }
-    }
 
     BoxWithConstraints(modifier = modifier) {
         val density = LocalDensity.current
         val containerSize = rememberContainerSize(maxWidth, maxHeight, density)
         val aspectRatio = rememberAspectRatio(containerSize)
+
+        LaunchedEffect(cameraState, onCameraChange, containerSize) {
+            val callback = onCameraChange ?: return@LaunchedEffect
+            snapshotFlow {
+                val projection = cameraState.projection ?: return@snapshotFlow null
+                val bounds = projection.resolveVisibleBounds(containerSize) ?: return@snapshotFlow null
+                Triple(cameraState.center, cameraState.zoom, bounds)
+            }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { (center, zoom, bounds) ->
+                    callback(center, zoom, bounds)
+                }
+        }
+
         val initialFrame = remember(containerSize, aspectRatio, frameResolver) {
             frameResolver.resolveFrame(
                 containerSize = containerSize,
@@ -104,14 +109,14 @@ fun MapCompose(
         val frame = remember(
             containerSize,
             aspectRatio,
-            mapController.zoom,
-            mapController.projection,
+            cameraState.zoom,
+            cameraState.projection,
             frameResolver,
             distanceCalculator,
             mapPlatform
         ) {
             val baseFrameWidthMeters = distanceCalculator.calculateDistanceMeters(
-                projection = mapController.projection,
+                projection = cameraState.projection,
                 frame = initialFrame,
                 mapPlatform = mapPlatform
             ).width
@@ -123,7 +128,7 @@ fun MapCompose(
         }
 
         val (widthMeters, heightMeters) = distanceCalculator.calculateDistanceMeters(
-            projection = mapController.projection,
+            projection = cameraState.projection,
             frame = frame,
             mapPlatform = mapPlatform
         )
@@ -131,12 +136,12 @@ fun MapCompose(
         LaunchedEffect(
             containerSize,
             initialFrame,
-            mapController.projection,
-            mapController.zoom
+            cameraState.projection,
+            cameraState.zoom
         ) {
             if (isInitCalibrated || containerSize.width <= 0) return@LaunchedEffect
             val currentDistance = distanceCalculator.calculateDistanceMeters(
-                projection = mapController.projection,
+                projection = cameraState.projection,
                 frame = initialFrame,
                 mapPlatform = mapPlatform
             ).width
@@ -144,18 +149,18 @@ fun MapCompose(
 
             val deltaZoom = log2(currentDistance / MIN_WIDTH_METERS)
             if (abs(deltaZoom) > INIT_ZOOM_EPSILON) {
-                val targetZoom = (mapController.zoom + deltaZoom).coerceIn(3f, 20f)
-                mapController.moveTo(center = mapController.center, zoom = targetZoom)
+                val targetZoom = (cameraState.zoom + deltaZoom).coerceIn(3f, 20f)
+                cameraState.moveTo(center = cameraState.center, zoom = targetZoom)
                 return@LaunchedEffect
             }
-            maxZoomLimit = mapController.zoom
+            maxZoomLimit = cameraState.zoom
             isInitCalibrated = true
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
             mapPlatform.MapView(
                 modifier = Modifier.fillMaxSize(),
-                controller = mapController,
+                cameraState = cameraState,
                 cameraConstraint = MapCameraConstraint(
                     minZoom = 3f,
                     maxZoom = maxZoomLimit
@@ -307,8 +312,6 @@ class KilometerDistanceFormatter(
     }
 }
 
-private fun log2(value: Float): Float = (ln(value.toDouble()) / ln(2.0)).toFloat()
-
 @Composable
 private fun rememberContainerSize(
     width: Dp,
@@ -335,6 +338,44 @@ private fun Rect.scaleFromCenter(scale: Float): Rect {
         top = center.y - halfHeight,
         right = center.x + halfWidth,
         bottom = center.y + halfHeight
+    )
+}
+
+private fun MapScreenProjection.resolveVisibleBounds(containerSize: IntSize): GeoBounds? {
+    if (containerSize.width <= 0 || containerSize.height <= 0) return null
+    val right = (containerSize.width - 1).coerceAtLeast(0)
+    val bottom = (containerSize.height - 1).coerceAtLeast(0)
+    val topLeft = fromScreenLocation(0, 0) ?: return null
+    val topRight = fromScreenLocation(right, 0) ?: return null
+    val bottomLeft = fromScreenLocation(0, bottom) ?: return null
+    val bottomRight = fromScreenLocation(right, bottom) ?: return null
+    val minLatitude = minOf(
+        topLeft.latitude,
+        topRight.latitude,
+        bottomLeft.latitude,
+        bottomRight.latitude
+    )
+    val maxLatitude = maxOf(
+        topLeft.latitude,
+        topRight.latitude,
+        bottomLeft.latitude,
+        bottomRight.latitude
+    )
+    val minLongitude = minOf(
+        topLeft.longitude,
+        topRight.longitude,
+        bottomLeft.longitude,
+        bottomRight.longitude
+    )
+    val maxLongitude = maxOf(
+        topLeft.longitude,
+        topRight.longitude,
+        bottomLeft.longitude,
+        bottomRight.longitude
+    )
+    return GeoBounds(
+        southwest = GeoPoint(latitude = minLatitude, longitude = minLongitude),
+        northeast = GeoPoint(latitude = maxLatitude, longitude = maxLongitude)
     )
 }
 
