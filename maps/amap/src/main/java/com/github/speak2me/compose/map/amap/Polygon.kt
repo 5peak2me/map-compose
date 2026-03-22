@@ -83,6 +83,7 @@ public fun Polygon(
                 }
                 strokeColor(strokeColor.toArgb())
                 lineJoinType(strokeJointType)
+                usePolylineStroke(true)
 //                strokePattern(strokePattern)
                 strokeWidth(strokeWidth)
                 visible(visible)

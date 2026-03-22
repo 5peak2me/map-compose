@@ -4,6 +4,7 @@ import android.graphics.Point
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntSize
@@ -11,6 +12,7 @@ import com.amap.api.maps.AMapUtils
 import com.amap.api.maps.CameraUpdate as AMapCameraUpdate
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.Projection
+import com.amap.api.maps.model.AMapPara.LineJoinType
 import com.amap.api.maps.model.CameraPosition as AMapCameraPosition
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
@@ -27,9 +29,13 @@ import com.github.speak2me.compose.map.amap.AMap
 import com.github.speak2me.compose.map.amap.CameraPositionState
 import com.github.speak2me.compose.map.amap.MapProperties
 import com.github.speak2me.compose.map.amap.MapUiSettings
+import com.github.speak2me.compose.map.amap.Polygon
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class AMapPlatform : MapPlatform {
 
@@ -82,12 +88,47 @@ class AMapPlatform : MapPlatform {
             tiltGesturesEnabled = uiConfig.tiltGesturesEnabled,
             zoomControlsEnabled = uiConfig.zoomControlsEnabled
         )
+        val innerStrokeWidth = 12f
+        val outerStrokeWidth = 12f
+        val borderSpacingPx = 0f
+        val innerBorderPoints = demoPolygonPoints.offsetOutwardByPixels(
+            zoom = amapCameraState.cameraState.position.zoom,
+            outwardPixels = innerStrokeWidth / 4f
+        )
+        val outerBorderPoints = demoPolygonPoints.offsetOutwardByPixels(
+            zoom = amapCameraState.cameraState.position.zoom,
+            outwardPixels = innerStrokeWidth / 3f * 2 + borderSpacingPx/* + outerStrokeWidth / 2f*/
+        )
         AMap(
             modifier = modifier.onSizeChanged(amapCameraState::onViewportChanged),
             cameraPositionState = amapCameraState.cameraState,
             properties = mapProperties,
             uiSettings = mapUiSettings
-        )
+        ) {
+            Polygon(
+                points = demoPolygonPoints,
+                fillColor = Color.Gray.copy(alpha = 0.42f),
+                strokeColor = Color.Transparent,
+                strokeWidth = 0f,
+                zIndex = 1f
+            )
+            Polygon(
+                points = outerBorderPoints,
+                fillColor = Color.Transparent,
+                strokeColor = Color(0xFF4A90E2).copy(alpha = 0.55f),
+                strokeJointType = LineJoinType.LineJoinRound,
+                strokeWidth = outerStrokeWidth,
+                zIndex = 2f
+            )
+            Polygon(
+                points = innerBorderPoints,
+                fillColor = Color.Transparent,
+                strokeColor = Color.Gray.copy(alpha = 0.75f),
+                strokeJointType = LineJoinType.LineJoinRound,
+                strokeWidth = innerStrokeWidth,
+                zIndex = 3f
+            )
+        }
     }
 }
 
@@ -253,3 +294,67 @@ private fun AMapCameraPosition.toCoreCameraPosition(): CoreCameraPosition = Core
     tilt = tilt,
     bearing = bearing
 )
+
+private val demoPolygonSeedPoints = listOf(
+    LatLng(31.8700, 117.0800),
+    LatLng(31.8900, 117.1450),
+    LatLng(31.8350, 117.1850),
+    LatLng(31.8050, 117.0950),
+)
+
+private val demoPolygonPoints = demoPolygonSeedPoints.expandFromCentroid(scale = 2.75)
+
+private fun List<LatLng>.expandFromCentroid(scale: Double): List<LatLng> {
+    if (isEmpty()) return this
+    val centerLatitude = sumOf(LatLng::latitude) / size
+    val centerLongitude = sumOf(LatLng::longitude) / size
+    return map { point ->
+        LatLng(
+            centerLatitude + (point.latitude - centerLatitude) * scale,
+            centerLongitude + (point.longitude - centerLongitude) * scale
+        )
+    }
+}
+
+private fun List<LatLng>.offsetOutwardByPixels(
+    zoom: Float,
+    outwardPixels: Float,
+): List<LatLng> {
+    if (size < 3 || outwardPixels <= 0f) return this
+    val centroid = centroid()
+    val metersPerPixel = metersPerPixel(
+        latitude = centroid.latitude,
+        zoom = zoom
+    )
+    val outwardMeters = outwardPixels * metersPerPixel
+    if (outwardMeters <= 0.0) return this
+
+    val metersPerDegreeLat = 111_320.0
+    val metersPerDegreeLon = (111_320.0 * cos(Math.toRadians(centroid.latitude)))
+        .coerceAtLeast(1e-6)
+
+    return map { point ->
+        val dxMeters = (point.longitude - centroid.longitude) * metersPerDegreeLon
+        val dyMeters = (point.latitude - centroid.latitude) * metersPerDegreeLat
+        val distance = sqrt(dxMeters * dxMeters + dyMeters * dyMeters)
+        if (distance <= 1e-6) {
+            point
+        } else {
+            val scale = (distance + outwardMeters) / distance
+            LatLng(
+                centroid.latitude + (dyMeters * scale) / metersPerDegreeLat,
+                centroid.longitude + (dxMeters * scale) / metersPerDegreeLon
+            )
+        }
+    }
+}
+
+private fun List<LatLng>.centroid(): LatLng {
+    if (isEmpty()) return LatLng(0.0, 0.0)
+    return LatLng(sumOf(LatLng::latitude) / size, sumOf(LatLng::longitude) / size)
+}
+
+private fun metersPerPixel(latitude: Double, zoom: Float): Double {
+    val safeZoom = zoom.coerceAtLeast(0f)
+    return (156543.03392 * cos(Math.toRadians(latitude))) / 2.0.pow(safeZoom.toDouble())
+}
