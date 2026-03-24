@@ -1,7 +1,11 @@
 package com.github.speak2me.app.compose.map.offline.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 
 data class GeoPoint(
     val latitude: Double,
@@ -22,6 +26,12 @@ data class CameraPosition(
     val zoom: Float,
     val tilt: Float = 0f,
     val bearing: Float = 0f,
+)
+
+data class CameraSnapshot(
+    val position: CameraPosition,
+    val isMoving: Boolean,
+    val visibleBounds: GeoBounds,
 )
 
 interface CameraUpdate {
@@ -93,6 +103,26 @@ interface MapCameraState {
      * 当前可用的屏幕投影能力，地图未就绪时可能为 null。
      */
     val projection: MapScreenProjection?
+
+    /**
+     * 当前可见区域地理边界，地图未就绪时可能为 null。
+     */
+    val visibleBounds: GeoBounds?
+
+    /**
+     * 监听相机状态快照流，地图未就绪时不应发出数据。
+     * 新平台（如 Google 地图）通常只需实现 position/isMoving/visibleBounds 即可复用该默认实现。
+     */
+    fun cameraSnapshotFlow(): Flow<CameraSnapshot> = snapshotFlow {
+        val bounds = visibleBounds ?: return@snapshotFlow null
+        CameraSnapshot(
+            position = position,
+            isMoving = isMoving,
+            visibleBounds = bounds
+        )
+    }
+        .filterNotNull()
+        .distinctUntilChanged()
 
     /**
      * 立即应用相机更新命令。
