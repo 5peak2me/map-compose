@@ -26,7 +26,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.center
@@ -310,23 +309,6 @@ class KilometerDistanceFormatter(
         val kilometers = distanceMeters.coerceIn(minDistanceMeters, maxDistanceMeters) / 1000f
         return "%.2f公里".format(Locale.getDefault(), kilometers)
     }
-}
-
-@Composable
-private fun rememberContainerSize(
-    width: Dp,
-    height: Dp,
-    density: Density,
-): IntSize = remember(width, height, density) {
-    with(density) {
-        IntSize(width.roundToPx(), height.roundToPx())
-    }
-}
-
-@Composable
-private fun rememberAspectRatio(containerSize: IntSize): Float = remember(containerSize) {
-    if (containerSize.width <= 0) 1f
-    else containerSize.height.toFloat() / containerSize.width.toFloat()
 }
 
 private fun Rect.scaleFromCenter(scale: Float): Rect {
