@@ -150,6 +150,9 @@ private class AMapCameraState(
     override val projection: MapScreenProjection?
         get() = cameraState.projection?.let(::AMapScreenProjection)
 
+    override val visibleBounds: GeoBounds?
+        get() = cameraState.projection?.visibleRegion?.latLngBounds?.toGeoBounds()
+
     override fun move(update: CameraUpdate) {
         when (update) {
             is CameraUpdate.Center -> {
@@ -246,6 +249,11 @@ private class AMapScreenProjection(
 private fun LatLng.toGeoPoint(): GeoPoint = GeoPoint(
     latitude = latitude,
     longitude = longitude
+)
+
+private fun LatLngBounds.toGeoBounds(): GeoBounds = GeoBounds(
+    southwest = southwest.toGeoPoint(),
+    northeast = northeast.toGeoPoint()
 )
 
 private fun GeoBounds.toLatLngBounds(): LatLngBounds {
