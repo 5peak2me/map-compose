@@ -91,8 +91,8 @@ class MapComposeCoordinatorTest {
 
         assertEquals(initialFrame, metrics.initialFrame)
         assertFloatEquals(expected = 80_000f, actual = metrics.initialFrameWidthMeters)
-        assertEquals(constrainedFrame, metrics.frame)
-        assertEquals(Size(width = 40_000f, height = 20_000f), metrics.distanceMeters)
+        assertEquals(constrainedFrame, metrics.resolveFrame)
+        assertEquals(Size(width = 40_000f, height = 20_000f), metrics.sizeInMeters)
         assertFloatEquals(expected = 80_000f, actual = frameResolver.lastFrameWidthMeters ?: -1f)
     }
 
@@ -130,7 +130,7 @@ class MapComposeCoordinatorTest {
             projection: com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection?,
             frame: Rect,
             mapPlatform: MapPlatform,
-        ): FrameDistanceMeters {
+        ): FrameGroundSizeMeters {
             return when (frame) {
                 initialFrame -> initialDistance
                 constrainedFrame -> constrainedDistance

@@ -115,10 +115,10 @@ private fun MapComposeContent(
                 mapPlatform = mapPlatform
             )
         }
-        val frame = frameMetrics.frame
+        val frame = frameMetrics.resolveFrame
 
         val currentFrame by rememberUpdatedState(frame)
-        val currentDistanceMeters by rememberUpdatedState(frameMetrics.distanceMeters)
+        val currentDistanceMeters by rememberUpdatedState(frameMetrics.sizeInMeters)
         var lastEmittedSelection by remember { mutableStateOf<SelectionFrame?>(null) }
 
         LaunchedEffect(cameraState) {
@@ -194,8 +194,8 @@ private fun MapComposeContent(
             )
             MapComposeOverlay(
                 frame = frame,
-                widthText = distanceScaleResolver.format(frameMetrics.distanceMeters.width),
-                heightText = distanceScaleResolver.format(frameMetrics.distanceMeters.height)
+                widthText = distanceScaleResolver.format(frameMetrics.sizeInMeters.width),
+                heightText = distanceScaleResolver.format(frameMetrics.sizeInMeters.height)
             )
         }
     }
@@ -251,8 +251,8 @@ private fun SelectionFrame.isApproximatelySame(
             size.isApproximatelySame(other.size, sizeEpsilon)
 }
 
-private fun FrameDistanceMeters.isApproximatelySame(
-    other: FrameDistanceMeters,
+private fun FrameGroundSizeMeters.isApproximatelySame(
+    other: FrameGroundSizeMeters,
     epsilon: Float,
 ): Boolean {
     return abs(width - other.width) <= epsilon &&
