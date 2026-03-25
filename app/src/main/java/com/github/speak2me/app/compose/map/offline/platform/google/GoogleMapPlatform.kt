@@ -119,7 +119,7 @@ private class GoogleMapCameraState(
             }
 
             is CameraUpdate.FitBounds -> {
-                applyFitBounds(update.bounds, update.paddingPx, pendingUpdate = update)
+                applyFitBounds(update.bounds, update.padding, pendingUpdate = update)
             }
 
             else -> return
@@ -133,7 +133,7 @@ private class GoogleMapCameraState(
             }
 
             is CameraUpdate.FitBounds -> {
-                val fitUpdate = buildFitBoundsUpdate(update.bounds, update.paddingPx)
+                val fitUpdate = buildFitBoundsUpdate(update.bounds, update.padding)
                 if (fitUpdate == null) {
                     pendingFitRequest = PendingFitRequest(
                         update = update,

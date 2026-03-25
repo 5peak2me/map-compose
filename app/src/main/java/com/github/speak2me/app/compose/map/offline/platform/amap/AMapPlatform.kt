@@ -2,21 +2,18 @@ package com.github.speak2me.app.compose.map.offline.platform.amap
 
 import android.graphics.Point
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntSize
 import com.amap.api.maps.AMapUtils
-import com.amap.api.maps.CameraUpdate as AMapCameraUpdate
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.Projection
 import com.amap.api.maps.model.AMapPara.LineJoinType
-import com.amap.api.maps.model.CameraPosition as AMapCameraPosition
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
-import com.github.speak2me.app.compose.map.offline.platform.CameraPosition as CoreCameraPosition
 import com.github.speak2me.app.compose.map.offline.platform.CameraUpdate
 import com.github.speak2me.app.compose.map.offline.platform.GeoBounds
 import com.github.speak2me.app.compose.map.offline.platform.GeoPoint
@@ -36,6 +33,9 @@ import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sqrt
+import com.amap.api.maps.CameraUpdate as AMapCameraUpdate
+import com.amap.api.maps.model.CameraPosition as AMapCameraPosition
+import com.github.speak2me.app.compose.map.offline.platform.CameraPosition as CoreCameraPosition
 
 class AMapPlatform : MapPlatform {
 
@@ -161,7 +161,7 @@ private class AMapCameraState(
             }
 
             is CameraUpdate.FitBounds -> {
-                applyFitBounds(update.bounds, update.paddingPx, pendingUpdate = update)
+                applyFitBounds(update.bounds, update.padding, pendingUpdate = update)
             }
             else -> return
         }
@@ -174,7 +174,7 @@ private class AMapCameraState(
             }
 
             is CameraUpdate.FitBounds -> {
-                val fitUpdate = buildFitBoundsUpdate(update.bounds, update.paddingPx)
+                val fitUpdate = buildFitBoundsUpdate(update.bounds, update.padding)
                 if (fitUpdate == null) {
                     pendingFitRequest = PendingFitRequest(
                         update = update,
