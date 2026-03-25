@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.filterNotNull
 data class GeoPoint(
     val latitude: Double,
     val longitude: Double,
-)
+) {
+    override fun toString(): String = "($longitude, $latitude)"
+}
 
 data class GeoBounds(
     val southwest: GeoPoint,
@@ -47,11 +49,11 @@ interface CameraUpdate {
 
     /**
      * 将相机移动到可完整展示指定地理范围的位置，且该区域在视口中居中展示。
-     * @param paddingPx 额外边距（像素）。
+     * @param padding 额外边距（像素）。
      */
     data class FitBounds(
         val bounds: GeoBounds,
-        val paddingPx: Int = 0,
+        val padding: Int = 0,
     ) : CameraUpdate
 }
 
@@ -145,23 +147,6 @@ interface MapCameraState {
         move(update = CameraUpdate.Center(center = center, zoom = zoom))
     }
 
-    /**
-     * 立即移动地图相机以完整展示指定地理范围（兼容）。
-     * @param paddingPx 额外边距（像素）。
-     */
-    fun moveTo(bounds: GeoBounds, paddingPx: Int = 0) {
-        move(update = CameraUpdate.FitBounds(bounds = bounds, paddingPx = paddingPx))
-    }
-
-    /**
-     * 立即移动地图相机以完整展示指定多边形区域（兼容）。
-     * @param paddingPx 额外边距（像素）。
-     */
-    fun moveTo(polygon: GeoPolygon, paddingPx: Int = 0) {
-        polygon.toGeoBoundsOrNull()?.let { bounds ->
-            move(update = CameraUpdate.FitBounds(bounds = bounds, paddingPx = paddingPx))
-        }
-    }
 }
 
 @Stable
