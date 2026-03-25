@@ -1,6 +1,7 @@
 package com.github.speak2me.app.compose.map.offline.platform.amap
 
 import android.graphics.Point
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,6 +25,7 @@ import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
 import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
 import com.github.speak2me.compose.map.amap.AMap
 import com.github.speak2me.compose.map.amap.CameraPositionState
+import com.github.speak2me.compose.map.amap.ComposeMapColorScheme
 import com.github.speak2me.compose.map.amap.MapProperties
 import com.github.speak2me.compose.map.amap.MapUiSettings
 import com.github.speak2me.compose.map.amap.Polygon
@@ -104,7 +106,8 @@ class AMapPlatform : MapPlatform {
             modifier = modifier.onSizeChanged(amapCameraState::onViewportChanged),
             cameraPositionState = amapCameraState.cameraState,
             properties = mapProperties,
-            uiSettings = mapUiSettings
+            uiSettings = mapUiSettings,
+            mapColorScheme = if (isSystemInDarkTheme()) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT
         ) {
             Polygon(
                 points = demoPolygonPoints,
