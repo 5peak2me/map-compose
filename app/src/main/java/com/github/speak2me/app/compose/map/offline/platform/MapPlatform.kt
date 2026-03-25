@@ -1,6 +1,7 @@
 package com.github.speak2me.app.compose.map.offline.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +35,7 @@ data class CameraSnapshot(
     val visibleBounds: GeoBounds,
 )
 
+@Stable
 interface CameraUpdate {
     /**
      * 将相机移动到指定中心点与缩放级别。
@@ -76,6 +78,7 @@ interface MapScreenProjection {
     fun fromScreenLocation(x: Int, y: Int): GeoPoint?
 }
 
+@Stable
 interface MapCameraState {
     /**
      * 当前地图相机位置状态。
@@ -161,6 +164,7 @@ interface MapCameraState {
     }
 }
 
+@Stable
 interface MapPlatform {
     /**
      * 计算两个地理坐标点之间的实际距离（米）。

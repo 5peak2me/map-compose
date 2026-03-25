@@ -9,7 +9,7 @@ import org.junit.Test
 
 class DistanceScaleOverlayLayoutCalculatorTest {
 
-    private val calculator = DefaultDistanceScaleOverlayLayoutCalculator()
+    private val calculator = DistanceScaleOverlayLayoutCalculator()
 
     @Test
     fun `calculate returns expected coordinates for normal frame`() {
