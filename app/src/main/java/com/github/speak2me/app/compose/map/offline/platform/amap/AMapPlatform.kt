@@ -93,7 +93,8 @@ class AMapPlatform : MapPlatform {
         val borderSpacingPx = 0f
         val innerBorderPoints = demoPolygonPoints.offsetOutwardByPixels(
             zoom = amapCameraState.cameraState.position.zoom,
-            outwardPixels = innerStrokeWidth / 4f
+//            outwardPixels = innerStrokeWidth / 3f + borderSpacingPx
+            outwardPixels = innerStrokeWidth / 3f + borderSpacingPx
         )
         val outerBorderPoints = demoPolygonPoints.offsetOutwardByPixels(
             zoom = amapCameraState.cameraState.position.zoom,

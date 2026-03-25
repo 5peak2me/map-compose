@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import com.github.speak2me.app.compose.map.offline.platform.GeoBounds
@@ -17,8 +18,11 @@ import com.github.speak2me.app.compose.map.offline.platform.CameraUpdate
 import com.github.speak2me.app.compose.map.offline.platform.MapCameraConstraint
 import com.github.speak2me.app.compose.map.offline.platform.MapCameraState
 import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
+import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
 import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
 import com.github.speak2me.app.compose.map.offline.platform.amap.AMapPlatform
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun MapCompose(
@@ -134,20 +138,6 @@ private fun MapComposeContent(
             mutableStateOf<MapComposeCalibrationState>(MapComposeCalibrationState.Pending)
         }
 
-        LaunchedEffect(cameraState, onBoundsChange, onCameraChange) {
-            val boundsCallback = onBoundsChange
-            val cameraCallback = onCameraChange
-            if (boundsCallback == null && cameraCallback == null) return@LaunchedEffect
-            cameraState.cameraSnapshotFlow().collect { snapshot ->
-                boundsCallback?.invoke(snapshot.visibleBounds)
-                cameraCallback?.invoke(
-                    snapshot.position.center,
-                    snapshot.position.zoom,
-                    snapshot.visibleBounds
-                )
-            }
-        }
-
         val frameMetrics = remember(
             containerSize,
             aspectRatio,
@@ -166,6 +156,29 @@ private fun MapComposeContent(
         val frame = frameMetrics.frame
         val widthMeters = frameMetrics.distanceMeters.width
         val heightMeters = frameMetrics.distanceMeters.height
+
+        LaunchedEffect(cameraState, frame, onBoundsChange, onCameraChange) {
+            val boundsCallback = onBoundsChange
+            val cameraCallback = onCameraChange
+            if (boundsCallback == null && cameraCallback == null) return@LaunchedEffect
+            var lastEmittedBounds: GeoBounds? = null
+            cameraState.cameraSnapshotFlow().collect { snapshot ->
+                if (boundsCallback != null && !snapshot.isMoving) {
+                    val croppedBounds = cameraState.projection?.let { projection ->
+                        frame.toGeoBounds(projection)
+                    }
+                    if (croppedBounds != null && !croppedBounds.isApproximatelySame(lastEmittedBounds)) {
+                        lastEmittedBounds = croppedBounds
+                        boundsCallback.invoke(croppedBounds)
+                    }
+                }
+                cameraCallback?.invoke(
+                    snapshot.position.center,
+                    snapshot.position.zoom,
+                    snapshot.visibleBounds
+                )
+            }
+        }
 
         LaunchedEffect(
             containerSize,
@@ -217,4 +230,36 @@ private fun MapComposeContent(
 private sealed interface MapComposeCalibrationState {
     data object Pending : MapComposeCalibrationState
     data class Calibrated(val maxZoomLimit: Float) : MapComposeCalibrationState
+}
+
+private fun Rect.toGeoBounds(projection: MapScreenProjection): GeoBounds? {
+    val topLeft = projection.fromScreenLocation(left.roundToInt(), top.roundToInt()) ?: return null
+    val topRight = projection.fromScreenLocation(right.roundToInt(), top.roundToInt()) ?: return null
+    val bottomLeft = projection.fromScreenLocation(left.roundToInt(), bottom.roundToInt()) ?: return null
+    val bottomRight = projection.fromScreenLocation(right.roundToInt(), bottom.roundToInt()) ?: return null
+
+    val points = listOf(topLeft, topRight, bottomLeft, bottomRight)
+    val minLatitude = points.minOf { it.latitude }
+    val maxLatitude = points.maxOf { it.latitude }
+    val minLongitude = points.minOf { it.longitude }
+    val maxLongitude = points.maxOf { it.longitude }
+
+    return GeoBounds(
+        southwest = GeoPoint(latitude = minLatitude, longitude = minLongitude),
+        northeast = GeoPoint(latitude = maxLatitude, longitude = maxLongitude)
+    )
+}
+
+private fun GeoBounds.isApproximatelySame(
+    other: GeoBounds?,
+    epsilon: Double = 1e-6,
+): Boolean {
+    if (other == null) return false
+    return southwest.isApproximatelySame(other.southwest, epsilon) &&
+        northeast.isApproximatelySame(other.northeast, epsilon)
+}
+
+private fun GeoPoint.isApproximatelySame(other: GeoPoint, epsilon: Double): Boolean {
+    return abs(latitude - other.latitude) <= epsilon &&
+        abs(longitude - other.longitude) <= epsilon
 }
