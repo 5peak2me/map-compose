@@ -18,13 +18,13 @@ import kotlin.math.roundToInt
 internal data class FrameMetrics(
     val initialFrame: Rect,
     val initialFrameWidthMeters: Float,
-    val frame: Rect,
-    val distanceMeters: FrameDistanceMeters,
+    val resolveFrame: Rect,
+    val sizeInMeters: FrameGroundSizeMeters,
 )
 
 internal data class SelectionFrame(
     val bounds: GeoBounds,
-    val size: FrameDistanceMeters,
+    val size: FrameGroundSizeMeters,
 )
 
 // --- Frame Resolution ---
@@ -104,8 +104,8 @@ internal class DefaultFrameResolver(
         return FrameMetrics(
             initialFrame = initialFrame,
             initialFrameWidthMeters = initialWidthMeters,
-            frame = finalFrame,
-            distanceMeters = if (finalFrame === initialFrame) {
+            resolveFrame = finalFrame,
+            sizeInMeters = if (finalFrame === initialFrame) {
                 // Optimization: avoid re-calculating distance if frame didn't change
                 Size(initialWidthMeters, initialWidthMeters * aspectRatio)
             } else {
@@ -135,7 +135,7 @@ internal interface DistanceCalculator {
         projection: MapScreenProjection?,
         frame: Rect,
         mapPlatform: MapPlatform,
-    ): FrameDistanceMeters
+    ): FrameGroundSizeMeters
 }
 
 internal class PlatformDistanceCalculator : DistanceCalculator {
@@ -143,7 +143,7 @@ internal class PlatformDistanceCalculator : DistanceCalculator {
         projection: MapScreenProjection?,
         frame: Rect,
         mapPlatform: MapPlatform,
-    ): FrameDistanceMeters {
+    ): FrameGroundSizeMeters {
         projection ?: return Size.Zero
         val centerX = frame.center.x.roundToInt()
         val centerY = frame.center.y.roundToInt()
@@ -177,7 +177,7 @@ internal class DefaultDistanceScaleResolver(
         projection: MapScreenProjection?,
         frame: Rect,
         mapPlatform: MapPlatform,
-    ): FrameDistanceMeters = distanceCalculator.calculateDistanceMeters(
+    ): FrameGroundSizeMeters = distanceCalculator.calculateDistanceMeters(
         projection = projection,
         frame = frame,
         mapPlatform = mapPlatform

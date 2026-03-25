@@ -11,4 +11,4 @@ internal const val INIT_ZOOM_EPSILON = 0.0005f
 
 internal val defaultCenter = GeoPoint(31.846594, 117.125279)
 
-typealias FrameDistanceMeters = Size
+typealias FrameGroundSizeMeters = Size
