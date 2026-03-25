@@ -18,7 +18,9 @@ data class GeoPoint(
 data class GeoBounds(
     val southwest: GeoPoint,
     val northeast: GeoPoint,
-)
+) {
+    override fun toString(): String = "Bounds(sw=$southwest, ne=$northeast)"
+}
 
 data class GeoPolygon(
     val points: List<GeoPoint>,

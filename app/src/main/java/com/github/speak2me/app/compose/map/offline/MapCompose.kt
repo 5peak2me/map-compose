@@ -23,13 +23,10 @@ import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
 import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
 import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
 import com.github.speak2me.app.compose.map.offline.platform.amap.AMapPlatform
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
-private const val SELECTION_EMIT_DEBOUNCE_MS = 120L
 
 @Composable
 internal fun MapCompose(
@@ -123,14 +120,12 @@ private fun MapComposeContent(
 
         LaunchedEffect(cameraState) {
             var pendingSelection: SelectionFrame? = null
-            var pendingEmitJob: Job? = null
 
-            cameraState.cameraSnapshotFlow().collect { snapshot ->
+            @Suppress("OPT_IN_USAGE")
+            cameraState.cameraSnapshotFlow().debounce(100L).collectLatest { snapshot ->
                 if (snapshot.isMoving || currentOnSelectionChange == null) {
-                    pendingEmitJob?.cancel()
-                    pendingEmitJob = null
                     pendingSelection = null
-                    return@collect
+                    return@collectLatest
                 }
 
                 val croppedBounds = cameraState.projection?.let { projection ->
@@ -138,19 +133,16 @@ private fun MapComposeContent(
                 }
                 val selectionFrame = croppedBounds?.let { bounds ->
                     SelectionFrame(bounds = bounds, size = currentDistanceMeters)
-                } ?: return@collect
-                if (selectionFrame.size == Size.Zero) return@collect
-                if (selectionFrame.isApproximatelySame(lastEmittedSelection)) return@collect
+                } ?: return@collectLatest
+                if (selectionFrame.size == Size.Zero) return@collectLatest
+                if (selectionFrame.isApproximatelySame(lastEmittedSelection)) return@collectLatest
 
                 pendingSelection = selectionFrame
-                pendingEmitJob?.cancel()
-                pendingEmitJob = launch {
-                    delay(SELECTION_EMIT_DEBOUNCE_MS)
-                    val latestSelection = pendingSelection ?: return@launch
-                    if (latestSelection.isApproximatelySame(lastEmittedSelection)) return@launch
-                    lastEmittedSelection = latestSelection
-                    currentOnSelectionChange?.invoke(latestSelection)
-                }
+//                    delay(SELECTION_EMIT_DEBOUNCE_MS)
+                val latestSelection = pendingSelection ?: return@collectLatest
+                if (latestSelection.isApproximatelySame(lastEmittedSelection)) return@collectLatest
+                lastEmittedSelection = latestSelection
+                currentOnSelectionChange?.invoke(latestSelection)
             }
         }
 
@@ -206,6 +198,9 @@ private sealed interface MapComposeCalibrationState {
     data class Calibrated(val maxZoomLimit: Float) : MapComposeCalibrationState
 }
 
+/**
+ * [区域在线绘制](https://lbs.amap.com/demo/javascript-api-v2/example/overlayers/rectangle-draw-and-edit)
+ */
 private fun Rect.toGeoBounds(projection: MapScreenProjection): GeoBounds? {
     val nw = projection.fromScreenLocation(left.roundToInt(), top.roundToInt()) ?: return null
     val ne =
