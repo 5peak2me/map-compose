@@ -8,72 +8,31 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
+import com.github.speak2me.app.compose.map.offline.platform.CameraUpdate
 import com.github.speak2me.app.compose.map.offline.platform.GeoBounds
 import com.github.speak2me.app.compose.map.offline.platform.GeoPoint
-import com.github.speak2me.app.compose.map.offline.platform.CameraUpdate
 import com.github.speak2me.app.compose.map.offline.platform.MapCameraConstraint
 import com.github.speak2me.app.compose.map.offline.platform.MapCameraState
 import com.github.speak2me.app.compose.map.offline.platform.MapPlatform
 import com.github.speak2me.app.compose.map.offline.platform.MapScreenProjection
 import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
 import com.github.speak2me.app.compose.map.offline.platform.amap.AMapPlatform
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-@Composable
-fun MapCompose(
-    modifier: Modifier = Modifier,
-    mapPlatform: MapPlatform = remember { AMapPlatform() },
-    initialUpdate: CameraUpdate = CameraUpdate.Center(
-        center = defaultCenter,
-        zoom = 12f
-    ),
-    cameraState: MapCameraState = mapPlatform.rememberCameraState(initialUpdate = initialUpdate),
-    maxDistanceMeters: Float = DEFAULT_MAX_DISTANCE_METERS,
-    onBoundsChange: ((GeoBounds) -> Unit)? = null,
-    distanceScaleResolver: DistanceScaleResolver = remember(maxDistanceMeters) {
-        DefaultDistanceScaleResolver(
-            distanceCalculator = PlatformDistanceCalculator(),
-            distanceFormatter = KilometerDistanceFormatter(
-                minDistanceMeters = MIN_WIDTH_METERS,
-                maxDistanceMeters = maxDistanceMeters
-            )
-        )
-    },
-    frameMetricsResolver: FrameMetricsResolver = remember(maxDistanceMeters, distanceScaleResolver) {
-        DefaultFrameMetricsResolver(
-            frameResolver = DefaultFrameResolver(maxDistanceMeters = maxDistanceMeters),
-            distanceCalculator = distanceScaleResolver
-        )
-    },
-    cameraCalibrationPolicy: CameraCalibrationPolicy = remember {
-        Log2CameraCalibrationPolicy(
-            minWidthMeters = MIN_WIDTH_METERS,
-            epsilon = INIT_ZOOM_EPSILON
-        )
-    },
-) {
-    MapComposeContent(
-        modifier = modifier,
-        mapPlatform = mapPlatform,
-        cameraState = cameraState,
-        onBoundsChange = onBoundsChange,
-        onCameraChange = null,
-        distanceScaleResolver = distanceScaleResolver,
-        frameMetricsResolver = frameMetricsResolver,
-        cameraCalibrationPolicy = cameraCalibrationPolicy,
-    )
-}
+private const val SELECTION_EMIT_DEBOUNCE_MS = 120L
 
-@Deprecated(
-    message = "Use overload with onBoundsChange or consume cameraState.cameraSnapshotFlow()."
-)
 @Composable
-fun MapCompose(
+internal fun MapCompose(
     modifier: Modifier = Modifier,
     mapPlatform: MapPlatform = remember { AMapPlatform() },
     initialUpdate: CameraUpdate = CameraUpdate.Center(
@@ -81,18 +40,21 @@ fun MapCompose(
         zoom = 12f
     ),
     cameraState: MapCameraState = mapPlatform.rememberCameraState(initialUpdate = initialUpdate),
+    minDistanceMeters: Float = MIN_WIDTH_METERS,
     maxDistanceMeters: Float = DEFAULT_MAX_DISTANCE_METERS,
-    onCameraChange: ((center: GeoPoint, zoom: Float, bounds: GeoBounds) -> Unit)?,
     distanceScaleResolver: DistanceScaleResolver = remember(maxDistanceMeters) {
         DefaultDistanceScaleResolver(
             distanceCalculator = PlatformDistanceCalculator(),
             distanceFormatter = KilometerDistanceFormatter(
-                minDistanceMeters = MIN_WIDTH_METERS,
+                minDistanceMeters = minDistanceMeters,
                 maxDistanceMeters = maxDistanceMeters
             )
         )
     },
-    frameMetricsResolver: FrameMetricsResolver = remember(maxDistanceMeters, distanceScaleResolver) {
+    frameMetricsResolver: FrameMetricsResolver = remember(
+        maxDistanceMeters,
+        distanceScaleResolver
+    ) {
         DefaultFrameMetricsResolver(
             frameResolver = DefaultFrameResolver(maxDistanceMeters = maxDistanceMeters),
             distanceCalculator = distanceScaleResolver
@@ -104,13 +66,13 @@ fun MapCompose(
             epsilon = INIT_ZOOM_EPSILON
         )
     },
+    onSelectionChange: ((SelectionFrame) -> Unit)? = null,
 ) {
     MapComposeContent(
         modifier = modifier,
         mapPlatform = mapPlatform,
         cameraState = cameraState,
-        onBoundsChange = null,
-        onCameraChange = onCameraChange,
+        onSelectionChange = onSelectionChange,
         distanceScaleResolver = distanceScaleResolver,
         frameMetricsResolver = frameMetricsResolver,
         cameraCalibrationPolicy = cameraCalibrationPolicy,
@@ -120,18 +82,18 @@ fun MapCompose(
 @Composable
 private fun MapComposeContent(
     modifier: Modifier,
-    mapPlatform: MapPlatform,
     cameraState: MapCameraState,
-    onBoundsChange: ((GeoBounds) -> Unit)?,
-    onCameraChange: ((center: GeoPoint, zoom: Float, bounds: GeoBounds) -> Unit)?,
+    mapPlatform: MapPlatform,
+    onSelectionChange: ((SelectionFrame) -> Unit)?,
     distanceScaleResolver: DistanceScaleResolver,
     frameMetricsResolver: FrameMetricsResolver,
     cameraCalibrationPolicy: CameraCalibrationPolicy,
 ) {
     val uiConfig = remember { MapUiConfig() }
+    val currentOnSelectionChange by rememberUpdatedState(onSelectionChange)
+    val density = LocalDensity.current
 
     BoxWithConstraints(modifier = modifier) {
-        val density = LocalDensity.current
         val containerSize = rememberContainerSize(maxWidth, maxHeight, density)
         val aspectRatio = rememberAspectRatio(containerSize)
         var calibrationState by remember(containerSize) {
@@ -154,29 +116,41 @@ private fun MapComposeContent(
             )
         }
         val frame = frameMetrics.frame
-        val widthMeters = frameMetrics.distanceMeters.width
-        val heightMeters = frameMetrics.distanceMeters.height
 
-        LaunchedEffect(cameraState, frame, onBoundsChange, onCameraChange) {
-            val boundsCallback = onBoundsChange
-            val cameraCallback = onCameraChange
-            if (boundsCallback == null && cameraCallback == null) return@LaunchedEffect
-            var lastEmittedBounds: GeoBounds? = null
+        val currentFrame by rememberUpdatedState(frame)
+        val currentDistanceMeters by rememberUpdatedState(frameMetrics.distanceMeters)
+        var lastEmittedSelection by remember { mutableStateOf<SelectionFrame?>(null) }
+
+        LaunchedEffect(cameraState) {
+            var pendingSelection: SelectionFrame? = null
+            var pendingEmitJob: Job? = null
+
             cameraState.cameraSnapshotFlow().collect { snapshot ->
-                if (boundsCallback != null && !snapshot.isMoving) {
-                    val croppedBounds = cameraState.projection?.let { projection ->
-                        frame.toGeoBounds(projection)
-                    }
-                    if (croppedBounds != null && !croppedBounds.isApproximatelySame(lastEmittedBounds)) {
-                        lastEmittedBounds = croppedBounds
-                        boundsCallback.invoke(croppedBounds)
-                    }
+                if (snapshot.isMoving || currentOnSelectionChange == null) {
+                    pendingEmitJob?.cancel()
+                    pendingEmitJob = null
+                    pendingSelection = null
+                    return@collect
                 }
-                cameraCallback?.invoke(
-                    snapshot.position.center,
-                    snapshot.position.zoom,
-                    snapshot.visibleBounds
-                )
+
+                val croppedBounds = cameraState.projection?.let { projection ->
+                    currentFrame.toGeoBounds(projection)
+                }
+                val selectionFrame = croppedBounds?.let { bounds ->
+                    SelectionFrame(bounds = bounds, size = currentDistanceMeters)
+                } ?: return@collect
+                if (selectionFrame.size == Size.Zero) return@collect
+                if (selectionFrame.isApproximatelySame(lastEmittedSelection)) return@collect
+
+                pendingSelection = selectionFrame
+                pendingEmitJob?.cancel()
+                pendingEmitJob = launch {
+                    delay(SELECTION_EMIT_DEBOUNCE_MS)
+                    val latestSelection = pendingSelection ?: return@launch
+                    if (latestSelection.isApproximatelySame(lastEmittedSelection)) return@launch
+                    lastEmittedSelection = latestSelection
+                    currentOnSelectionChange?.invoke(latestSelection)
+                }
             }
         }
 
@@ -199,6 +173,7 @@ private fun MapComposeContent(
                 is CameraCalibrationAction.MoveCamera -> {
                     cameraState.moveTo(center = cameraState.center, zoom = action.targetZoom)
                 }
+
                 is CameraCalibrationAction.Complete -> {
                     calibrationState = MapComposeCalibrationState.Calibrated(
                         maxZoomLimit = action.maxZoomLimit
@@ -217,11 +192,10 @@ private fun MapComposeContent(
                 ),
                 uiConfig = uiConfig
             )
-            SelectionFrameOverlay(frame = frame)
-            DistanceScaleOverlay(
+            MapComposeOverlay(
                 frame = frame,
-                distanceScaleResolver.format(widthMeters),
-                distanceScaleResolver.format(heightMeters)
+                widthText = distanceScaleResolver.format(frameMetrics.distanceMeters.width),
+                heightText = distanceScaleResolver.format(frameMetrics.distanceMeters.height)
             )
         }
     }
@@ -233,12 +207,15 @@ private sealed interface MapComposeCalibrationState {
 }
 
 private fun Rect.toGeoBounds(projection: MapScreenProjection): GeoBounds? {
-    val topLeft = projection.fromScreenLocation(left.roundToInt(), top.roundToInt()) ?: return null
-    val topRight = projection.fromScreenLocation(right.roundToInt(), top.roundToInt()) ?: return null
-    val bottomLeft = projection.fromScreenLocation(left.roundToInt(), bottom.roundToInt()) ?: return null
-    val bottomRight = projection.fromScreenLocation(right.roundToInt(), bottom.roundToInt()) ?: return null
+    val nw = projection.fromScreenLocation(left.roundToInt(), top.roundToInt()) ?: return null
+    val ne =
+        projection.fromScreenLocation(right.roundToInt(), top.roundToInt()) ?: return null
+    val sw =
+        projection.fromScreenLocation(left.roundToInt(), bottom.roundToInt()) ?: return null
+    val se =
+        projection.fromScreenLocation(right.roundToInt(), bottom.roundToInt()) ?: return null
 
-    val points = listOf(topLeft, topRight, bottomLeft, bottomRight)
+    val points = listOf(nw, ne, sw, se)
     val minLatitude = points.minOf { it.latitude }
     val maxLatitude = points.maxOf { it.latitude }
     val minLongitude = points.minOf { it.longitude }
@@ -256,10 +233,28 @@ private fun GeoBounds.isApproximatelySame(
 ): Boolean {
     if (other == null) return false
     return southwest.isApproximatelySame(other.southwest, epsilon) &&
-        northeast.isApproximatelySame(other.northeast, epsilon)
+            northeast.isApproximatelySame(other.northeast, epsilon)
 }
 
 private fun GeoPoint.isApproximatelySame(other: GeoPoint, epsilon: Double): Boolean {
     return abs(latitude - other.latitude) <= epsilon &&
-        abs(longitude - other.longitude) <= epsilon
+            abs(longitude - other.longitude) <= epsilon
+}
+
+private fun SelectionFrame.isApproximatelySame(
+    other: SelectionFrame?,
+    boundsEpsilon: Double = 1e-6,
+    sizeEpsilon: Float = 0.5f,
+): Boolean {
+    if (other == null) return false
+    return bounds.isApproximatelySame(other.bounds, boundsEpsilon) &&
+            size.isApproximatelySame(other.size, sizeEpsilon)
+}
+
+private fun FrameDistanceMeters.isApproximatelySame(
+    other: FrameDistanceMeters,
+    epsilon: Float,
+): Boolean {
+    return abs(width - other.width) <= epsilon &&
+            abs(height - other.height) <= epsilon
 }

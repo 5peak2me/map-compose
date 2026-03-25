@@ -63,8 +63,8 @@ private fun MapComposeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            onBoundsChange = {
-                println("onBoundsChange: $it")
+            onSelectionChange = {
+                println("onSelectionChange: $it")
             }
         )
 //        MapComposeBottomBar(

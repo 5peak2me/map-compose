@@ -25,42 +25,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun SelectionFrameOverlay(
-    frame: Rect,
-    maskColor: Color = Color.Black.copy(alpha = 0.7f),
-    borderColor: Color = Color(0xFF3A90FF),
-    borderWidth: Dp = 4.dp,
-) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .drawWithCache {
-                val selectionPath = Path().apply { addRect(frame) }
-
-                onDrawWithContent {
-                    drawContent()
-                    clipPath(path = selectionPath, clipOp = ClipOp.Difference) {
-                        drawRect(color = maskColor, size = size)
-                    }
-                    drawRect(
-                        color = borderColor,
-                        topLeft = Offset(frame.left, frame.top),
-                        size = Size(frame.width, frame.height),
-                        style = Stroke(borderWidth.toPx())
-                    )
-                }
-            }
-    )
-}
-
-@Composable
-internal fun DistanceScaleOverlay(
+internal fun MapComposeOverlay(
     frame: Rect,
     widthText: String,
     heightText: String,
+    maskColor: Color = Color.Black.copy(alpha = 0.7f),
+    borderColor: Color = Color(0xFF3A90FF),
+    borderWidth: Dp = 4.dp,
     guideColor: Color = Color(0xFF4FA0FF),
     layoutCalculator: DistanceScaleOverlayLayoutCalculator = remember {
-        DefaultDistanceScaleOverlayLayoutCalculator()
+        DistanceScaleOverlayLayoutCalculator()
     },
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -71,10 +45,12 @@ internal fun DistanceScaleOverlay(
             fontWeight = FontWeight.Normal
         )
     }
+
     Box(
         Modifier
             .fillMaxSize()
             .drawWithCache {
+                val selectionPath = Path().apply { addRect(frame) }
                 val strokePx = 1.dp.toPx()
                 val tickLengthPx = 8.dp.toPx()
                 val gapPx = tickLengthPx
@@ -94,45 +70,60 @@ internal fun DistanceScaleOverlay(
 
                 onDrawWithContent {
                     drawContent()
+
+                    // 1. Draw Mask
+                    clipPath(path = selectionPath, clipOp = ClipOp.Difference) {
+                        drawRect(color = maskColor, size = size)
+                    }
+
+                    // 2. Draw Selection Border
+                    drawRect(
+                        color = borderColor,
+                        topLeft = Offset(frame.left, frame.top),
+                        size = Size(frame.width, frame.height),
+                        style = Stroke(borderWidth.toPx())
+                    )
+
+                    // 3. Draw Center Guides
                     drawFrameCenterGuides(
                         frame = frame,
                         guideColor = guideColor,
                         strokePx = strokePx
                     )
 
-                    if (!layout.shouldDrawDistance) return@onDrawWithContent
-
-                    drawHorizontalDistanceScale(
-                        frame = frame,
-                        layout = layout,
-                        color = guideColor,
-                        strokePx = strokePx,
-                        tickLengthPx = tickLengthPx
-                    )
-                    drawText(
-                        textLayoutResult = widthTextLayout,
-                        topLeft = Offset(x = layout.widthLabelLeft, y = layout.widthLabelTop)
-                    )
-
-                    drawVerticalDistanceScale(
-                        frame = frame,
-                        layout = layout,
-                        color = guideColor,
-                        strokePx = strokePx,
-                        tickLengthPx = tickLengthPx
-                    )
-                    rotate(degrees = -90f, pivot = layout.heightLabelCenter) {
-                        drawText(
-                            textLayoutResult = heightTextLayout,
-                            topLeft = Offset(
-                                x = layout.heightLabelCenter.x - layout.heightLabelWidth / 2f,
-                                y = layout.heightLabelCenter.y - layout.heightLabelHeight / 4f,
-                            )
+                    // 4. Draw Distance Scales
+                    if (layout.shouldDrawDistance) {
+                        drawHorizontalDistanceScale(
+                            frame = frame,
+                            layout = layout,
+                            color = guideColor,
+                            strokePx = strokePx,
+                            tickLengthPx = tickLengthPx
                         )
+                        drawText(
+                            textLayoutResult = widthTextLayout,
+                            topLeft = Offset(x = layout.widthLabelLeft, y = layout.widthLabelTop)
+                        )
+
+                        drawVerticalDistanceScale(
+                            frame = frame,
+                            layout = layout,
+                            color = guideColor,
+                            strokePx = strokePx,
+                            tickLengthPx = tickLengthPx
+                        )
+                        rotate(degrees = -90f, pivot = layout.heightLabelCenter) {
+                            drawText(
+                                textLayoutResult = heightTextLayout,
+                                topLeft = Offset(
+                                    x = layout.heightLabelCenter.x - layout.heightLabelWidth / 2f,
+                                    y = layout.heightLabelCenter.y - layout.heightLabelHeight / 4f,
+                                )
+                            )
+                        }
                     }
                 }
             }
-
     )
 }
 

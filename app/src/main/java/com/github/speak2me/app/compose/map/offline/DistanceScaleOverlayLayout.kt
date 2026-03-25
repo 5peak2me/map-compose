@@ -4,7 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntSize
 
-data class DistanceScaleOverlayLayoutInput(
+internal data class DistanceScaleOverlayLayoutInput(
     val frame: Rect,
     val widthLabelSize: IntSize,
     val heightLabelSize: IntSize,
@@ -13,7 +13,7 @@ data class DistanceScaleOverlayLayoutInput(
     val lineTextGapPx: Float,
 )
 
-data class DistanceScaleOverlayLayout(
+internal data class DistanceScaleOverlayLayout(
     val shouldDrawDistance: Boolean,
     val topLineY: Float,
     val leftLineX: Float,
@@ -28,12 +28,8 @@ data class DistanceScaleOverlayLayout(
     val heightLabelHeight: Float,
 )
 
-interface DistanceScaleOverlayLayoutCalculator {
-    fun calculate(input: DistanceScaleOverlayLayoutInput): DistanceScaleOverlayLayout
-}
-
-class DefaultDistanceScaleOverlayLayoutCalculator : DistanceScaleOverlayLayoutCalculator {
-    override fun calculate(input: DistanceScaleOverlayLayoutInput): DistanceScaleOverlayLayout {
+internal class DistanceScaleOverlayLayoutCalculator {
+    fun calculate(input: DistanceScaleOverlayLayoutInput): DistanceScaleOverlayLayout {
         val frame = input.frame
         val widthLabelWidth = input.widthLabelSize.width.toFloat()
         val widthLabelHeight = input.widthLabelSize.height.toFloat()
