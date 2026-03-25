@@ -49,7 +49,7 @@ interface CameraUpdate {
      * 将相机移动到可完整展示指定地理范围的位置，且该区域在视口中居中展示。
      * @param paddingPx 额外边距（像素）。
      */
-    data class AreaCentered(
+    data class FitBounds(
         val bounds: GeoBounds,
         val paddingPx: Int = 0,
     ) : CameraUpdate
@@ -150,7 +150,7 @@ interface MapCameraState {
      * @param paddingPx 额外边距（像素）。
      */
     fun moveTo(bounds: GeoBounds, paddingPx: Int = 0) {
-        move(update = CameraUpdate.AreaCentered(bounds = bounds, paddingPx = paddingPx))
+        move(update = CameraUpdate.FitBounds(bounds = bounds, paddingPx = paddingPx))
     }
 
     /**
@@ -159,7 +159,7 @@ interface MapCameraState {
      */
     fun moveTo(polygon: GeoPolygon, paddingPx: Int = 0) {
         polygon.toGeoBoundsOrNull()?.let { bounds ->
-            move(update = CameraUpdate.AreaCentered(bounds = bounds, paddingPx = paddingPx))
+            move(update = CameraUpdate.FitBounds(bounds = bounds, paddingPx = paddingPx))
         }
     }
 }
