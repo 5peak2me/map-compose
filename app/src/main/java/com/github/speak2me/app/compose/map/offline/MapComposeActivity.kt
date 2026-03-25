@@ -53,16 +53,19 @@ private fun MapComposeScreen(
     bottomBarColor: Color,
 ) {
     Column(modifier = modifier) {
-//        MapComposeTopBar(
-//            color = titleBarColor,
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(48.dp)
-//        )
+        MapComposeTopBar(
+            color = titleBarColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+        )
         MapCompose(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            onBoundsChange = {
+                println("onBoundsChange: $it")
+            }
         )
 //        MapComposeBottomBar(
 //            color = bottomBarColor,
