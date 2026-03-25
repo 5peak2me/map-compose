@@ -1,6 +1,7 @@
 package com.github.speak2me.app.compose.map.offline.platform.google
 
 import android.graphics.Point
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -21,6 +22,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.SphericalUtil
 import com.google.maps.android.compose.CameraPositionState
+import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -86,7 +88,8 @@ class GoogleMapPlatform : MapPlatform {
             modifier = modifier.onSizeChanged(googleCameraState::onViewportChanged),
             cameraPositionState = googleCameraState.cameraState,
             properties = mapProperties,
-            uiSettings = mapUiSettings
+            uiSettings = mapUiSettings,
+            mapColorScheme = if (isSystemInDarkTheme()) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT
         )
     }
 }
