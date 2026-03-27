@@ -67,6 +67,7 @@ data class MapCameraConstraint(
 data class MapUiConfig(
     val compassEnabled: Boolean = false,
     val indoorLevelPickerEnabled: Boolean = false,
+    val isMyLocationEnabled: Boolean = true,
     val mapToolbarEnabled: Boolean = false,
     val myLocationButtonEnabled: Boolean = false,
     val rotationGesturesEnabled: Boolean = false,
