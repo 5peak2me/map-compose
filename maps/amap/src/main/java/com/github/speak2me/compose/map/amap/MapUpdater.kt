@@ -53,7 +53,7 @@ internal class MapPropertiesNode(
     var contentDescription = contentDescription
         set(value) {
             field = value
-            mapView.setContentDescription(contentDescription)
+            mapView.setContentDescription(value)
         }
 
     var cameraPositionState = cameraPositionState
@@ -95,7 +95,6 @@ public val DefaultMapContentPadding: PaddingValues = PaddingValues()
 /**
  * Used to keep the primary map properties up to date. This should never leave the map composition.
  */
-@SuppressLint("MissingPermission")
 @Suppress("NOTHING_TO_INLINE")
 @Composable
 internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdaterState) {
