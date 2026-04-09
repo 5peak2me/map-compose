@@ -9,7 +9,7 @@ espressoCore = "3.7.0"
 # https://developer.android.com/jetpack/androidx/releases/lifecycle?hl=zh-cn#2.10.0-alpha04
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
-composeBom = "2026.03.00"
+composeBom = "2026.03.01"
 #appcompat = "1.7.1"
 #material = "1.13.0"
 mockito = "5.23.0"
@@ -58,7 +58,7 @@ map-baidu-base = { module = "com.baidu.lbsyun:base", version.ref = "map-baidu" }
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Util
 map-baidu-util = { module = "com.baidu.lbsyun:BaiduMapSDK_Util", version.ref = "map-baidu" }
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Location
-map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.6.6.2" }
+map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.6.7" }
 
 # https://central.sonatype.com/artifact/com.tencent.map/tencent-map-vector-sdk
 map-tencent = "com.tencent.map:tencent-map-vector-sdk:6.9.0.260312.237cbc9d.205120930"
