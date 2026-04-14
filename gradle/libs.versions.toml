@@ -1,6 +1,6 @@
 [versions]
 accompanistPermissions = "0.37.3"
-agp = "9.1.0"
+agp = "9.1.1"
 kotlin = "2.3.20"
 coreKtx = "1.18.0"
 junit = "4.13.2"
@@ -49,7 +49,7 @@ mockitoKotlin = { group = "com.nhaarman.mockitokotlin2", name = "mockito-kotlin"
 
 #map-amap = { module = "com.amap.api:3dmap", version = "10.0.600" }
 # https://central.sonatype.com/artifact/com.amap.api/3dmap-location-search
-map-amap-location-search = { module = "com.amap.api:3dmap-location-search", version = "11.1.000_loc11.1.000_sea9.7.4" }
+map-amap-location-search = { module = "com.amap.api:3dmap-location-search", version = "11.1.001_loc11.1.001_sea9.7.4" }
 
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Map
 map-baidu = { module = "com.baidu.lbsyun:BaiduMapSDK_Map", version.ref = "map-baidu" }
@@ -70,7 +70,7 @@ map-tencent-utilities = "com.tencent.map:sdk-utilities:1.0.12"
 map-tencent-geolocation = "com.tencent.map.geolocation:TencentLocationSdk-openplatform:7.6.1.12"
 
 # https://github.com/googlemaps/android-maps-compose
-map-google = "com.google.maps.android:maps-compose:8.2.2"
+map-google = "com.google.maps.android:maps-compose:8.3.0"
 # https://github.com/googlemaps/android-maps-utils
 map-google-utils = "com.google.maps.android:android-maps-utils:4.1.1"
 # https://github.com/googlemaps/android-maps-ktx
