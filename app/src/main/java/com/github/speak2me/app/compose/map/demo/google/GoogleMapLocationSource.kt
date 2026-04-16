@@ -6,6 +6,7 @@ import android.location.Location
 import android.text.format.DateFormat
 import com.github.speak2me.app.compose.map.route.plan.utils.CoordinateTransform.wgs84ToGcj02
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.LocationSource
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
@@ -58,7 +59,7 @@ class GoogleMapLocationSource(
 
                 println("location g = $transformed")
                 listener.onLocationChanged(transformed.toLocation())
-//                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(transformed, 15f))
+                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(transformed, 15f))
             }
         }.addOnFailureListener { exception ->
             println("Failed to get current location: ${exception.stackTraceToString()}")

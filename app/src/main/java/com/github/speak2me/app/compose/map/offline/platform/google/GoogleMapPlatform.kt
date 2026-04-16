@@ -206,8 +206,8 @@ private data class PendingFitRequest(
 private class GoogleMapScreenProjection(
     private val projection: Projection,
 ) : MapScreenProjection {
-    override fun fromScreenLocation(x: Int, y: Int): GeoPoint? {
-        return projection.fromScreenLocation(Point(x, y))?.toGeoPoint()
+    override fun fromScreenLocation(x: Int, y: Int): GeoPoint {
+        return projection.fromScreenLocation(Point(x, y)).toGeoPoint()
     }
 }
 

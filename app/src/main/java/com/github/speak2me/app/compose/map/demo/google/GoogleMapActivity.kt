@@ -167,14 +167,14 @@ private fun GoogleMapScreen(isMyLocationEnabled: Boolean) {
     ) {
         @OptIn(MapsComposeExperimentalApi::class)
         MapEffect {
-            it.isMyLocationEnabled = false
+            it.isMyLocationEnabled = true
             it.setOnMarkerClickListener {
                 println(it)
                 false
             }
         }
 
-        Current(current, cameraPositionState)
+//        Current(current, cameraPositionState)
 
         Marker(
             position = defaultLocation,
