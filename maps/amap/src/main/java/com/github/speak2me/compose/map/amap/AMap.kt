@@ -37,7 +37,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.UiComposable
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -47,8 +46,8 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.amap.api.maps.AMap
 import com.amap.api.maps.AMapOptions
 import com.amap.api.maps.LocationSource
-//import com.amap.api.maps.MapView
-import com.amap.api.maps.TextureMapView as MapView
+import com.amap.api.maps.MapView
+//import com.amap.api.maps.TextureMapView as MapView
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.Poi as PointOfInterest
 import com.github.speak2me.compose.map.amap.ktx.awaitMap
@@ -157,6 +156,7 @@ public fun AMap(
             mapViewFactory(context, aMapOptionsFactory()).also { mapView ->
                 val componentCallbacks = object : ComponentCallbacks2 {
                     override fun onConfigurationChanged(newConfig: Configuration) {}
+
                     @Deprecated("Deprecated in Java", ReplaceWith("onTrimMemory(level)"))
                     override fun onLowMemory() {
                         mapView.onLowMemory()

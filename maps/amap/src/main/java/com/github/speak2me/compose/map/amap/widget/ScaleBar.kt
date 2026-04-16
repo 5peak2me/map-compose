@@ -32,25 +32,44 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.amap.api.maps.model.LatLng
+import com.amap.api.maps.Projection
 import com.github.speak2me.compose.map.amap.CameraPositionState
 import com.github.speak2me.compose.map.amap.ktx.sphericalDistance
 import kotlinx.coroutines.delay
+
+internal fun calculateDistance(
+    projection: Projection,
+    width: Dp,
+    density: Density
+): Int {
+    val widthInPixels = with(density) {
+        width.toPx().toInt()
+    }
+
+    val upperLeftLatLng = projection.fromScreenLocation(Point(0, 0))
+    val upperRightLatLng =
+        projection.fromScreenLocation(Point(widthInPixels, 0))
+
+    val canvasWidthMeters = upperLeftLatLng.sphericalDistance(upperRightLatLng)
+
+    return (canvasWidthMeters * 8 / 9).toInt()
+}
 
 public val DarkGray: Color = Color(0xFF3a3c3b)
 private val defaultWidth: Dp = 65.dp
@@ -60,8 +79,13 @@ private val defaultHeight: Dp = 50.dp
  * A scale bar composable that shows the current scale of the map in feet and meters when zoomed in
  * to the map, changing to miles and kilometers, respectively, when zooming out.
  *
- * Implement your own observer on camera move events using [CameraPositionState] and pass it in
- * as [cameraPositionState].
+ * @param modifier Modifier to be applied to the composable.
+ * @param width The width of the composable.
+ * @param height The height of the composable.
+ * @param cameraPositionState The state of the camera position, used to calculate the scale.
+ * @param textColor The color of the text on the scale bar.
+ * @param lineColor The color of the lines on the scale bar.
+ * @param shadowColor The color of the shadow behind the text and lines.
  */
 @Composable
 public fun ScaleBar(
@@ -73,37 +97,35 @@ public fun ScaleBar(
     lineColor: Color = DarkGray,
     shadowColor: Color = Color.White,
 ) {
-    Box(
-        modifier = modifier
-            .size(width = width, height = height)
-    ) {
-        var horizontalLineWidthMeters by remember(cameraPositionState.position.zoom) {
-            mutableIntStateOf(0)
+    val density = LocalDensity.current
+    val horizontalLineWidthMeters by remember(cameraPositionState.position.zoom) {
+        derivedStateOf {
+            cameraPositionState.projection?.let {
+                calculateDistance(it, width, density)
+            } ?: 0
         }
+    }
 
+    Box(
+        modifier = modifier.size(width = width, height = height)
+    ) {
+        // The Canvas composable is used for custom drawing. Here, we are drawing the
+        // lines of the scale bar.
         Canvas(
             modifier = Modifier.fillMaxSize(),
             onDraw = {
-                // Get width of canvas in meters
-                val upperLeftLatLng =
-                    cameraPositionState.projection?.fromScreenLocation(Point(0, 0))
-                        ?: LatLng(0.0, 0.0)
-                val upperRightLatLng =
-                    cameraPositionState.projection?.fromScreenLocation(Point(0, size.width.toInt()))
-                        ?: LatLng(0.0, 0.0)
-                val canvasWidthMeters = upperLeftLatLng.sphericalDistance(upperRightLatLng)
-                val eightNinthsCanvasMeters = (canvasWidthMeters * 8 / 9).toInt()
-
-                horizontalLineWidthMeters = eightNinthsCanvasMeters
-
-                val oneNinthWidth = 0f
+                val oneNinthWidth = size.width / 9
                 val midHeight = size.height / 2
                 val oneThirdHeight = size.height / 3
                 val twoThirdsHeight = size.height * 2 / 3
                 val strokeWidth = 4f
                 val shadowStrokeWidth = strokeWidth + 3
 
-                // Middle horizontal line shadow (drawn under main lines)
+                // The shadows are drawn first, slightly offset from the main lines, to create
+                // a "drop shadow" effect. This makes the scale bar more readable on different
+                // map backgrounds.
+
+                // Middle horizontal line shadow
                 drawLine(
                     color = shadowColor,
                     start = Offset(oneNinthWidth, midHeight),
@@ -111,7 +133,7 @@ public fun ScaleBar(
                     strokeWidth = shadowStrokeWidth,
                     cap = StrokeCap.Round
                 )
-                // Top Start vertical line shadow (drawn under main lines)
+                // Top vertical line shadow
                 drawLine(
                     color = shadowColor,
                     start = Offset(oneNinthWidth, oneThirdHeight),
@@ -119,14 +141,16 @@ public fun ScaleBar(
                     strokeWidth = shadowStrokeWidth,
                     cap = StrokeCap.Round
                 )
-                // Top End vertical line shadow (drawn under main lines)
+                // Bottom vertical line shadow
                 drawLine(
                     color = shadowColor,
-                    start = Offset(size.width, oneThirdHeight),
-                    end = Offset(size.width, midHeight),
+                    start = Offset(oneNinthWidth, midHeight),
+                    end = Offset(oneNinthWidth, twoThirdsHeight),
                     strokeWidth = shadowStrokeWidth,
                     cap = StrokeCap.Round
                 )
+
+                // These are the main lines of the scale bar.
 
                 // Middle horizontal line
                 drawLine(
@@ -136,7 +160,7 @@ public fun ScaleBar(
                     strokeWidth = strokeWidth,
                     cap = StrokeCap.Round
                 )
-                // Top Start vertical line
+                // Top vertical line
                 drawLine(
                     color = lineColor,
                     start = Offset(oneNinthWidth, oneThirdHeight),
@@ -144,11 +168,11 @@ public fun ScaleBar(
                     strokeWidth = strokeWidth,
                     cap = StrokeCap.Round
                 )
-                // Top End vertical line
+                // Bottom vertical line
                 drawLine(
                     color = lineColor,
-                    start = Offset(size.width, oneThirdHeight),
-                    end = Offset(size.width, midHeight),
+                    start = Offset(oneNinthWidth, midHeight),
+                    end = Offset(oneNinthWidth, twoThirdsHeight),
                     strokeWidth = strokeWidth,
                     cap = StrokeCap.Round
                 )
@@ -156,8 +180,11 @@ public fun ScaleBar(
         )
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.SpaceAround
         ) {
+            // Here, we determine the appropriate units (meters/kilometers and feet/miles)
+            // based on the calculated distance in meters.
+
             var metricUnits = "m"
             var metricDistance = horizontalLineWidthMeters
             if (horizontalLineWidthMeters > METERS_IN_KILOMETER) {
@@ -174,6 +201,8 @@ public fun ScaleBar(
 //                imperialDistance = imperialDistance.toMiles()
 //            }
 //
+//            // We display the calculated distances in two Text composables, one for imperial
+//            // and one for metric units.
 //            ScaleText(
 //                modifier = Modifier.align(End),
 //                textColor = textColor,
@@ -194,8 +223,16 @@ public fun ScaleBar(
  * An animated scale bar that appears when the zoom level of the map changes, and then disappears
  * after [visibilityDurationMillis]. This composable wraps [ScaleBar] with visibility animations.
  *
- * Implement your own observer on camera move events using [CameraPositionState] and pass it in
- * as [cameraPositionState].
+ * @param modifier Modifier to be applied to the composable.
+ * @param width The width of the composable.
+ * @param height The height of the composable.
+ * @param cameraPositionState The state of the camera position, used to calculate the scale.
+ * @param textColor The color of the text on the scale bar.
+ * @param lineColor The color of the lines on the scale bar.
+ * @param shadowColor The color of the shadow behind the text and lines.
+ * @param visibilityDurationMillis The duration in milliseconds that the scale bar will be visible.
+ * @param enterTransition The animation to use when the scale bar appears.
+ * @param exitTransition The animation to use when the scale bar disappears.
  */
 @Composable
 public fun DisappearingScaleBar(
@@ -214,14 +251,19 @@ public fun DisappearingScaleBar(
         MutableTransitionState(true)
     }
 
-    LaunchedEffect(key1 = cameraPositionState.position.zoom) {
-        // Show ScaleBar
+    // This effect is re-launched every time the camera position changes.
+    //
+    // The effect itself makes the scale bar visible, waits for the specified duration,
+    // and then makes it invisible again. This creates the "disappearing" effect.
+    LaunchedEffect(key1 = cameraPositionState.position) {
         visible.targetState = true
         delay(visibilityDurationMillis.toLong())
-        // Hide ScaleBar after timeout period
         visible.targetState = false
     }
 
+    // `AnimatedVisibility` is a composable that animates the appearance and disappearance
+    // of its content. We are using it here to wrap the `ScaleBar` and provide the
+    // fade-in and fade-out animations.
     AnimatedVisibility(
         visibleState = visible,
         modifier = modifier,
@@ -264,7 +306,8 @@ private fun ScaleText(
 }
 
 /**
- * Converts [this] value in meters to the corresponding value in feet
+ * Converts [this] value in meters to the corresponding value in feet.
+ * This is a utility function used for unit conversion.
  * @return [this] meters value converted to feet
  */
 internal fun Double.toFeet(): Double {
@@ -272,7 +315,8 @@ internal fun Double.toFeet(): Double {
 }
 
 /**
- * Converts [this] value in feet to the corresponding value in miles
+ * Converts [this] value in feet to the corresponding value in miles.
+ * This is a utility function used for unit conversion.
  * @return [this] feet value converted to miles
  */
 internal fun Double.toMiles(): Double {

@@ -13,26 +13,23 @@ import kotlin.math.abs
 import kotlin.math.log2
 import kotlin.math.roundToInt
 
-// --- Models ---
+// --- 核心模型 ---
 
 internal data class FrameMetrics(
     val initialFrame: Rect,
     val initialFrameWidthMeters: Float,
     val resolveFrame: Rect,
-    val sizeInMeters: FrameGroundSizeMeters,
+    val sizeInMeters: Size,
 )
 
 internal data class SelectionFrame(
     val bounds: GeoBounds,
-    val size: FrameGroundSizeMeters,
+    val size: Size,
 )
 
-// --- Frame Resolution ---
+// --- 选区计算逻辑 ---
 
 internal interface FrameResolver {
-    /**
-     * Resolves both initial and final frames in a single pass to avoid redundant calculations.
-     */
     fun resolve(
         containerSize: IntSize,
         aspectRatio: Float,
@@ -79,7 +76,15 @@ internal class MaxDistanceFrameScalePolicy(
         val widthMeters = frameWidthMeters ?: return frame
         if (widthMeters <= safeMaxDistanceMeters) return frame
         val scale = (safeMaxDistanceMeters / widthMeters).coerceIn(0f, 1f)
-        return frame.scaleFromCenter(scale)
+        val rectCenter = frame.center
+        val halfWidth = frame.width * scale / 2f
+        val halfHeight = frame.height * scale / 2f
+        return Rect(
+            left = rectCenter.x - halfWidth,
+            top = rectCenter.y - halfHeight,
+            right = rectCenter.x + halfWidth,
+            bottom = rectCenter.y + halfHeight
+        )
     }
 }
 
@@ -100,13 +105,12 @@ internal class DefaultFrameResolver(
         val initialFrame = initialFrameFactory.create(containerSize, aspectRatio)
         val initialWidthMeters = frameWidthMetersProvider(initialFrame)
         val finalFrame = frameScalePolicy.apply(initialFrame, initialWidthMeters)
-        
+
         return FrameMetrics(
             initialFrame = initialFrame,
             initialFrameWidthMeters = initialWidthMeters,
             resolveFrame = finalFrame,
             sizeInMeters = if (finalFrame === initialFrame) {
-                // Optimization: avoid re-calculating distance if frame didn't change
                 Size(initialWidthMeters, initialWidthMeters * aspectRatio)
             } else {
                 val finalWidth = frameWidthMetersProvider(finalFrame)
@@ -116,34 +120,34 @@ internal class DefaultFrameResolver(
     }
 }
 
-private fun Rect.scaleFromCenter(scale: Float): Rect {
-    val rectCenter = center
-    val halfWidth = width * scale / 2f
-    val halfHeight = height * scale / 2f
-    return Rect(
-        left = rectCenter.x - halfWidth,
-        top = rectCenter.y - halfHeight,
-        right = rectCenter.x + halfWidth,
-        bottom = rectCenter.y + halfHeight
-    )
-}
-
-// --- Distance Calculation ---
+// --- 距离计算与格式化 ---
 
 internal interface DistanceCalculator {
     fun calculateDistanceMeters(
         projection: MapScreenProjection?,
         frame: Rect,
         mapPlatform: MapPlatform,
-    ): FrameGroundSizeMeters
+    ): Size
 }
+
+internal interface DistanceFormatter {
+    fun format(distanceMeters: Float): String
+}
+
+@Stable
+internal interface DistanceResolver : DistanceCalculator, DistanceFormatter
+
+internal class DefaultDistanceResolver(
+    private val calculator: DistanceCalculator,
+    private val formatter: DistanceFormatter,
+) : DistanceResolver, DistanceCalculator by calculator, DistanceFormatter by formatter
 
 internal class PlatformDistanceCalculator : DistanceCalculator {
     override fun calculateDistanceMeters(
         projection: MapScreenProjection?,
         frame: Rect,
         mapPlatform: MapPlatform,
-    ): FrameGroundSizeMeters {
+    ): Size {
         projection ?: return Size.Zero
         val centerX = frame.center.x.roundToInt()
         val centerY = frame.center.y.roundToInt()
@@ -162,32 +166,6 @@ internal class PlatformDistanceCalculator : DistanceCalculator {
     }
 }
 
-internal interface DistanceFormatter {
-    fun format(distanceMeters: Float): String
-}
-
-@Stable
-internal interface DistanceScaleResolver : DistanceCalculator, DistanceFormatter
-
-internal class DefaultDistanceScaleResolver(
-    private val distanceCalculator: DistanceCalculator,
-    private val distanceFormatter: DistanceFormatter,
-) : DistanceScaleResolver {
-    override fun calculateDistanceMeters(
-        projection: MapScreenProjection?,
-        frame: Rect,
-        mapPlatform: MapPlatform,
-    ): FrameGroundSizeMeters = distanceCalculator.calculateDistanceMeters(
-        projection = projection,
-        frame = frame,
-        mapPlatform = mapPlatform
-    )
-
-    override fun format(distanceMeters: Float): String {
-        return distanceFormatter.format(distanceMeters)
-    }
-}
-
 internal class KilometerDistanceFormatter(
     private val minDistanceMeters: Float = MIN_WIDTH_METERS,
     private val maxDistanceMeters: Float = DEFAULT_MAX_DISTANCE_METERS,
@@ -198,7 +176,8 @@ internal class KilometerDistanceFormatter(
     }
 }
 
-// --- Metrics Resolution ---
+// --- 指标解析 ---
+
 @Stable
 internal interface FrameMetricsResolver {
     fun resolve(
@@ -233,7 +212,7 @@ internal class DefaultFrameMetricsResolver(
     }
 }
 
-// --- Calibration ---
+// --- 相机校准策略 ---
 
 internal sealed interface CameraCalibrationAction {
     data object Pending : CameraCalibrationAction
@@ -252,7 +231,10 @@ internal class Log2CameraCalibrationPolicy(
     private val minZoom: Float = 3f,
     private val maxZoom: Float = 20f,
 ) : CameraCalibrationPolicy {
-    override fun evaluate(currentZoom: Float, currentDistanceMeters: Float): CameraCalibrationAction {
+    override fun evaluate(
+        currentZoom: Float,
+        currentDistanceMeters: Float
+    ): CameraCalibrationAction {
         if (currentDistanceMeters <= 0f) return CameraCalibrationAction.Pending
         val deltaZoom = log2(currentDistanceMeters / minWidthMeters)
         if (abs(deltaZoom) > epsilon) {

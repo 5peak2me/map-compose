@@ -26,8 +26,10 @@ import com.github.speak2me.app.compose.map.offline.platform.MapUiConfig
 import com.github.speak2me.compose.map.amap.AMap
 import com.github.speak2me.compose.map.amap.CameraPositionState
 import com.github.speak2me.compose.map.amap.ComposeMapColorScheme
+import com.github.speak2me.compose.map.amap.MapEffect
 import com.github.speak2me.compose.map.amap.MapProperties
 import com.github.speak2me.compose.map.amap.MapUiSettings
+import com.github.speak2me.compose.map.amap.MapsComposeExperimentalApi
 import com.github.speak2me.compose.map.amap.Polygon
 import com.github.speak2me.compose.map.amap.rememberCameraPositionState
 import kotlinx.coroutines.CoroutineScope
@@ -66,6 +68,7 @@ class AMapPlatform : MapPlatform {
         )
     }
 
+    @OptIn(MapsComposeExperimentalApi::class)
     @Composable
     override fun MapView(
         modifier: Modifier,
@@ -110,7 +113,7 @@ class AMapPlatform : MapPlatform {
             uiSettings = mapUiSettings,
             mapColorScheme = if (isSystemInDarkTheme()) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT
         ) {
-            com.github.speak2me.compose.map.amap.MapEffect(uiConfig.isMyLocationEnabled) { amap ->
+            MapEffect(uiConfig.isMyLocationEnabled) { amap ->
                 if (uiConfig.isMyLocationEnabled) {
                     amap.setMyLocationType(com.amap.api.maps.AMap.LOCATION_TYPE_LOCATE)
                 }

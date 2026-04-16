@@ -197,9 +197,9 @@ public class MarkerState private constructor(position: LatLng) {
             "so it will be changed or removed.",
     replaceWith = ReplaceWith(
         expression = """
-rememberSaveable(key = key, saver = MarkerState.Saver) {
-    MarkerState(position)
-}
+            val markerState = rememberSaveable(key = key, saver = MarkerState.Saver) {
+                MarkerState(position)
+            }
         """
     )
 )

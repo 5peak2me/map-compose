@@ -31,7 +31,7 @@ import com.amap.api.maps.model.BitmapDescriptor
 import com.amap.api.maps.model.BitmapDescriptorFactory
 
 @Composable
-internal fun rememberComposeBitmapDescriptor(
+public fun rememberComposeBitmapDescriptor(
     vararg keys: Any,
     content: @Composable () -> Unit,
 ): BitmapDescriptor {
