@@ -15,12 +15,12 @@
  */
 package com.github.speak2me.compose.map.amap.ktx
 
+//import com.amap.api.maps.MapView
 import androidx.core.view.doOnAttach
 import com.amap.api.maps.AMap
-//import com.amap.api.maps.MapView
-import com.amap.api.maps.TextureMapView as MapView
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import com.amap.api.maps.TextureMapView as MapView
 
 /**
  * A suspending function that provides an instance of [AMap] from this [MapView]. This is
@@ -29,7 +29,7 @@ import kotlin.coroutines.suspendCoroutine
  * @return the [AMap] instance
  */
 public suspend inline fun MapView.awaitMap(): AMap =
-    suspendCoroutine { continuation ->
+    suspendCancellableCoroutine { continuation ->
         doOnAttach {
             continuation.resume(map)
         }

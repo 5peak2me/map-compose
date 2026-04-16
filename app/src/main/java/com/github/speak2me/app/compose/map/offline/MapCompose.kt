@@ -43,12 +43,12 @@ internal fun MapCompose(
         )
     }
     val cameraState: MapCameraState = mapPlatform.rememberCameraState(initialUpdate = initialUpdate)
-    val uiConfig: MapUiConfig = remember { MapUiConfig() }
+    val uiConfig: MapUiConfig = remember { MapUiConfig(isMyLocationEnabled = true) }
 
-    val distanceScaleResolver: DistanceScaleResolver = remember(maxDistanceMeters) {
-        DefaultDistanceScaleResolver(
-            distanceCalculator = PlatformDistanceCalculator(),
-            distanceFormatter = KilometerDistanceFormatter(
+    val distanceScaleResolver: DistanceResolver = remember(maxDistanceMeters) {
+        DefaultDistanceResolver(
+            calculator = PlatformDistanceCalculator(),
+            formatter = KilometerDistanceFormatter(
                 minDistanceMeters = minDistanceMeters,
                 maxDistanceMeters = maxDistanceMeters
             )
@@ -89,7 +89,7 @@ private fun MapComposeContent(
     mapPlatform: MapPlatform,
     uiConfig: MapUiConfig,
     onSelectionChange: ((SelectionFrame) -> Unit)?,
-    distanceScaleResolver: DistanceScaleResolver,
+    distanceScaleResolver: DistanceResolver,
     frameMetricsResolver: FrameMetricsResolver,
     cameraCalibrationPolicy: CameraCalibrationPolicy,
 ) {
@@ -129,7 +129,7 @@ private fun MapComposeContent(
 
             @Suppress("OPT_IN_USAGE")
             cameraState.cameraSnapshotFlow()
-                .debounce(100L)
+                .debounce(150L)
                 .collectLatest { snapshot ->
                     if (snapshot.isMoving) return@collectLatest
 
@@ -138,7 +138,7 @@ private fun MapComposeContent(
                     val selectionFrame =
                         SelectionFrame(bounds = croppedBounds, size = currentDistanceMeters)
 
-                    if (selectionFrame.size == Size.Zero) return@collectLatest
+                    if (selectionFrame.size.width <= 0f || selectionFrame.size.height <= 0f) return@collectLatest
                     if (selectionFrame.isApproximatelySame(lastEmittedSelection)) return@collectLatest
 
                     lastEmittedSelection = selectionFrame
@@ -199,9 +199,6 @@ private sealed interface MapComposeCalibrationState {
     data class Calibrated(val maxZoomLimit: Float) : MapComposeCalibrationState
 }
 
-/**
- * [区域在线绘制](https://lbs.amap.com/demo/javascript-api-v2/example/overlayers/rectangle-draw-and-edit)
- */
 private fun Rect.toGeoBounds(projection: MapScreenProjection): GeoBounds? {
     val nw = projection.fromScreenLocation(left.roundToInt(), top.roundToInt()) ?: return null
     val ne =
@@ -228,13 +225,10 @@ private fun GeoBounds.isApproximatelySame(
     epsilon: Double = 1e-6,
 ): Boolean {
     if (other == null) return false
-    return southwest.isApproximatelySame(other.southwest, epsilon) &&
-            northeast.isApproximatelySame(other.northeast, epsilon)
-}
-
-private fun GeoPoint.isApproximatelySame(other: GeoPoint, epsilon: Double): Boolean {
-    return abs(latitude - other.latitude) <= epsilon &&
-            abs(longitude - other.longitude) <= epsilon
+    return abs(southwest.latitude - other.southwest.latitude) <= epsilon &&
+            abs(southwest.longitude - other.southwest.longitude) <= epsilon &&
+            abs(northeast.latitude - other.northeast.latitude) <= epsilon &&
+            abs(northeast.longitude - other.northeast.longitude) <= epsilon
 }
 
 private fun SelectionFrame.isApproximatelySame(
@@ -244,12 +238,6 @@ private fun SelectionFrame.isApproximatelySame(
 ): Boolean {
     if (other == null) return false
     return bounds.isApproximatelySame(other.bounds, boundsEpsilon) &&
-            size.isApproximatelySame(other.size, sizeEpsilon)
-}
-
-private fun FrameGroundSizeMeters.isApproximatelySame(
-    other: FrameGroundSizeMeters,
-    epsilon: Float,
-): Boolean {
-    return abs(width - other.width) <= epsilon && abs(height - other.height) <= epsilon
+            abs(size.width - other.size.width) <= sizeEpsilon &&
+            abs(size.height - other.size.height) <= sizeEpsilon
 }

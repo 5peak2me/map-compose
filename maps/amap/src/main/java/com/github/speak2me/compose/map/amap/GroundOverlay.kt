@@ -24,6 +24,7 @@ import com.amap.api.maps.model.GroundOverlay
 import com.amap.api.maps.model.GroundOverlayOptions
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
+import com.github.speak2me.compose.map.amap.GroundOverlayPosition.Companion.create
 import com.github.speak2me.compose.map.amap.ktx.addGroundOverlay
 
 internal class GroundOverlayNode(
@@ -40,7 +41,8 @@ internal class GroundOverlayNode(
  *
  * Use one of the [create] methods to construct an instance of this class.
  */
-public class GroundOverlayPosition private constructor(
+@ConsistentCopyVisibility
+public data class GroundOverlayPosition internal constructor(
     public val latLngBounds: LatLngBounds? = null,
     public val location: LatLng? = null,
     public val width: Float? = null,
@@ -116,6 +118,11 @@ public fun GroundOverlay(
             update(transparency) { this.groundOverlay.transparency = it }
             update(visible) { this.groundOverlay.isVisible = it }
             update(zIndex) { this.groundOverlay.zIndex = it }
+            update(anchor) {
+                // GroundOverlay does not have a setAnchor method.
+                // We could recreate the overlay here, but that might be expensive.
+                // For now, we'll document that anchor cannot be changed.
+            }
         }
     )
 }
