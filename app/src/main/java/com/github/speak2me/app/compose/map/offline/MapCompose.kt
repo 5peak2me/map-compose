@@ -31,15 +31,21 @@ import kotlin.math.roundToInt
 @Composable
 internal fun MapCompose(
     modifier: Modifier = Modifier,
-    mapPlatform: MapPlatform = remember { AMapPlatform() },
-    initialUpdate: CameraUpdate = CameraUpdate.Center(
-        center = defaultCenter,
-        zoom = 12f
-    ),
-    cameraState: MapCameraState = mapPlatform.rememberCameraState(initialUpdate = initialUpdate),
     minDistanceMeters: Float = MIN_WIDTH_METERS,
     maxDistanceMeters: Float = DEFAULT_MAX_DISTANCE_METERS,
-    distanceScaleResolver: DistanceScaleResolver = remember(maxDistanceMeters) {
+    onSelectionChange: ((SelectionFrame) -> Unit)? = null,
+) {
+    val mapPlatform: MapPlatform = remember { AMapPlatform() }
+    val initialUpdate: CameraUpdate = remember {
+        CameraUpdate.Center(
+            center = defaultCenter,
+            zoom = 12f
+        )
+    }
+    val cameraState: MapCameraState = mapPlatform.rememberCameraState(initialUpdate = initialUpdate)
+    val uiConfig: MapUiConfig = remember { MapUiConfig() }
+
+    val distanceScaleResolver: DistanceScaleResolver = remember(maxDistanceMeters) {
         DefaultDistanceScaleResolver(
             distanceCalculator = PlatformDistanceCalculator(),
             distanceFormatter = KilometerDistanceFormatter(
@@ -47,8 +53,8 @@ internal fun MapCompose(
                 maxDistanceMeters = maxDistanceMeters
             )
         )
-    },
-    frameMetricsResolver: FrameMetricsResolver = remember(
+    }
+    val frameMetricsResolver: FrameMetricsResolver = remember(
         maxDistanceMeters,
         distanceScaleResolver
     ) {
@@ -56,19 +62,19 @@ internal fun MapCompose(
             frameResolver = DefaultFrameResolver(maxDistanceMeters = maxDistanceMeters),
             distanceCalculator = distanceScaleResolver
         )
-    },
-    cameraCalibrationPolicy: CameraCalibrationPolicy = remember {
+    }
+    val cameraCalibrationPolicy: CameraCalibrationPolicy = remember {
         Log2CameraCalibrationPolicy(
             minWidthMeters = MIN_WIDTH_METERS,
             epsilon = INIT_ZOOM_EPSILON
         )
-    },
-    onSelectionChange: ((SelectionFrame) -> Unit)? = null,
-) {
+    }
+
     MapComposeContent(
         modifier = modifier,
         mapPlatform = mapPlatform,
         cameraState = cameraState,
+        uiConfig = uiConfig,
         onSelectionChange = onSelectionChange,
         distanceScaleResolver = distanceScaleResolver,
         frameMetricsResolver = frameMetricsResolver,
@@ -81,12 +87,12 @@ private fun MapComposeContent(
     modifier: Modifier,
     cameraState: MapCameraState,
     mapPlatform: MapPlatform,
+    uiConfig: MapUiConfig,
     onSelectionChange: ((SelectionFrame) -> Unit)?,
     distanceScaleResolver: DistanceScaleResolver,
     frameMetricsResolver: FrameMetricsResolver,
     cameraCalibrationPolicy: CameraCalibrationPolicy,
 ) {
-    val uiConfig = remember { MapUiConfig() }
     val currentOnSelectionChange by rememberUpdatedState(onSelectionChange)
     val density = LocalDensity.current
 
@@ -118,32 +124,26 @@ private fun MapComposeContent(
         val currentDistanceMeters by rememberUpdatedState(frameMetrics.sizeInMeters)
         var lastEmittedSelection by remember { mutableStateOf<SelectionFrame?>(null) }
 
-        LaunchedEffect(cameraState) {
-            var pendingSelection: SelectionFrame? = null
+        LaunchedEffect(cameraState, currentOnSelectionChange) {
+            if (currentOnSelectionChange == null) return@LaunchedEffect
 
             @Suppress("OPT_IN_USAGE")
-            cameraState.cameraSnapshotFlow().debounce(100L).collectLatest { snapshot ->
-                if (snapshot.isMoving || currentOnSelectionChange == null) {
-                    pendingSelection = null
-                    return@collectLatest
-                }
+            cameraState.cameraSnapshotFlow()
+                .debounce(100L)
+                .collectLatest { snapshot ->
+                    if (snapshot.isMoving) return@collectLatest
 
-                val croppedBounds = cameraState.projection?.let { projection ->
-                    currentFrame.toGeoBounds(projection)
-                }
-                val selectionFrame = croppedBounds?.let { bounds ->
-                    SelectionFrame(bounds = bounds, size = currentDistanceMeters)
-                } ?: return@collectLatest
-                if (selectionFrame.size == Size.Zero) return@collectLatest
-                if (selectionFrame.isApproximatelySame(lastEmittedSelection)) return@collectLatest
+                    val projection = cameraState.projection ?: return@collectLatest
+                    val croppedBounds = currentFrame.toGeoBounds(projection) ?: return@collectLatest
+                    val selectionFrame =
+                        SelectionFrame(bounds = croppedBounds, size = currentDistanceMeters)
 
-                pendingSelection = selectionFrame
-//                    delay(SELECTION_EMIT_DEBOUNCE_MS)
-                val latestSelection = pendingSelection ?: return@collectLatest
-                if (latestSelection.isApproximatelySame(lastEmittedSelection)) return@collectLatest
-                lastEmittedSelection = latestSelection
-                currentOnSelectionChange?.invoke(latestSelection)
-            }
+                    if (selectionFrame.size == Size.Zero) return@collectLatest
+                    if (selectionFrame.isApproximatelySame(lastEmittedSelection)) return@collectLatest
+
+                    lastEmittedSelection = selectionFrame
+                    currentOnSelectionChange?.invoke(selectionFrame)
+                }
         }
 
         LaunchedEffect(
@@ -155,12 +155,13 @@ private fun MapComposeContent(
         ) {
             if (containerSize.width <= 0) return@LaunchedEffect
             if (calibrationState is MapComposeCalibrationState.Calibrated) return@LaunchedEffect
-            when (
-                val action = cameraCalibrationPolicy.evaluate(
-                    currentZoom = cameraState.zoom,
-                    currentDistanceMeters = frameMetrics.initialFrameWidthMeters
-                )
-            ) {
+
+            val action = cameraCalibrationPolicy.evaluate(
+                currentZoom = cameraState.zoom,
+                currentDistanceMeters = frameMetrics.initialFrameWidthMeters
+            )
+
+            when (action) {
                 CameraCalibrationAction.Pending -> Unit
                 is CameraCalibrationAction.MoveCamera -> {
                     cameraState.moveTo(center = cameraState.center, zoom = action.targetZoom)
@@ -250,6 +251,5 @@ private fun FrameGroundSizeMeters.isApproximatelySame(
     other: FrameGroundSizeMeters,
     epsilon: Float,
 ): Boolean {
-    return abs(width - other.width) <= epsilon &&
-            abs(height - other.height) <= epsilon
+    return abs(width - other.width) <= epsilon && abs(height - other.height) <= epsilon
 }

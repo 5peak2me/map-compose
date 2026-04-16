@@ -77,6 +77,7 @@ class AMapPlatform : MapPlatform {
             ?: error("AMapPlatform requires AMapCameraState")
 
         val mapProperties = MapProperties(
+            isMyLocationEnabled = uiConfig.isMyLocationEnabled,
             minZoomPreference = cameraConstraint.minZoom ?: 3f,
             maxZoomPreference = cameraConstraint.maxZoom ?: 20f
         )
@@ -109,6 +110,11 @@ class AMapPlatform : MapPlatform {
             uiSettings = mapUiSettings,
             mapColorScheme = if (isSystemInDarkTheme()) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT
         ) {
+            com.github.speak2me.compose.map.amap.MapEffect(uiConfig.isMyLocationEnabled) { amap ->
+                if (uiConfig.isMyLocationEnabled) {
+                    amap.setMyLocationType(com.amap.api.maps.AMap.LOCATION_TYPE_LOCATE)
+                }
+            }
             Polygon(
                 points = demoPolygonPoints,
                 fillColor = Color.Gray.copy(alpha = 0.42f),
