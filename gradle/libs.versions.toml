@@ -1,7 +1,7 @@
 [versions]
 accompanistPermissions = "0.37.3"
-agp = "9.1.1"
-kotlin = "2.3.20"
+agp = "9.2.1"
+kotlin = "2.3.21"
 coreKtx = "1.18.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -9,13 +9,13 @@ espressoCore = "3.7.0"
 # https://developer.android.com/jetpack/androidx/releases/lifecycle?hl=zh-cn#2.10.0-alpha04
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
-composeBom = "2026.03.01"
+composeBom = "2026.05.00"
 #appcompat = "1.7.1"
 #material = "1.13.0"
 mockito = "5.23.0"
 mockitoInline = "5.2.0"
 mockitoKotlin = "2.2.0"
-map-baidu = "7.6.7"
+map-baidu = "8.0.0"
 viewpager2 = "1.1.0"
 constraintlayout = "2.2.1"
 #kotlinxSerializationJson = "1.9.0"
@@ -39,7 +39,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose",  version = "2.9.7" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose",  version = "2.9.8" }
 #androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 #material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
@@ -72,7 +72,7 @@ map-tencent-geolocation = "com.tencent.map.geolocation:TencentLocationSdk-openpl
 # https://github.com/googlemaps/android-maps-compose
 map-google = "com.google.maps.android:maps-compose:8.3.0"
 # https://github.com/googlemaps/android-maps-utils
-map-google-utils = "com.google.maps.android:android-maps-utils:4.1.1"
+map-google-utils = "com.google.maps.android:android-maps-utils:4.3.0"
 # https://github.com/googlemaps/android-maps-ktx
 #map-google-utils-ktx = "com.google.maps.android:maps-utils-ktx:5.2.1"
 map-google-location = "com.google.android.gms:play-services-location:21.3.0"
