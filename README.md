@@ -3,6 +3,9 @@
 [![Kotlin](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.kotlin&label=Kotlin&color=blue&logo=kotlin)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.composeBom&label=Compose&color=blue&logo=android)](https://developer.android.com/jetpack/compose)
 [![AGP](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.agp&label=AGP&color=blue&logo=android)](https://developer.android.com/build/releases/gradle-plugin)
+[![compileSdk](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.compileSdk&label=compileSdk&color=green&logo=android)](https://developer.android.com/guide/)
+[![minSdk](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.minSdk&label=minSdk&color=green&logo=android)](https://developer.android.com/guide/)
+[![Gradle](https://img.shields.io/badge/dynamic/regex?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/wrapper/gradle-wrapper.properties&search=gradle-([0-9.]%2B)-(?:bin|all).zip&replace=$1&label=Gradle&color=blue&logo=gradle)](https://gradle.org)
 
 `map-compose` 是一组面向 Jetpack Compose 的 Android 地图封装，让高德、百度、腾讯等原生地图 SDK 可以像普通 Compose 组件一样接入、组合和管理生命周期。
 
@@ -46,38 +49,14 @@ dependencyResolutionManagement {
 
 ### 2. 引入模块
 
-源码接入时，把需要的平台模块加入 `settings.gradle.kts`：
-
-```kotlin
-include(":maps:amap")
-include(":maps:baidu")
-include(":maps:tencent")
-```
-
 然后在 App 模块中按需依赖：
 
 ```kotlin
 dependencies {
-    implementation(project(":maps:amap"))
-    implementation(project(":maps:baidu"))
-    implementation(project(":maps:tencent"))
-
-    // Google Maps 走官方 Compose 库
-    implementation("com.google.maps.android:maps-compose:8.3.0")
-}
-```
-
-如果你使用 JitPack，请以 JitPack 页面实际生成的模块坐标为准，把上面的 `project(...)` 替换为远程依赖即可。
-
-### 3. 启用 Compose
-
-宿主 App 需要启用 Compose：
-
-```kotlin
-android {
-    buildFeatures {
-        compose = true
-    }
+    implementation("com.github.5peak2me.map-compose:amap:1.0.0")
+    implementation("com.github.5peak2me.map-compose:baidu:1.0.0")
+    implementation("com.github.5peak2me.map-compose:huawei:1.0.0")
+    implementation("com.github.5peak2me.map-compose:tencent:1.0.0")
 }
 ```
 
