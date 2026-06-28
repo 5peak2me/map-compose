@@ -74,7 +74,7 @@ map-tencent-foundation = "com.tencent.openmap:foundation:0.9.0.e5ea763"
 # https://central.sonatype.com/artifact/com.tencent.map/sdk-utilities
 map-tencent-utilities = "com.tencent.map:sdk-utilities:1.0.12"
 # https://central.sonatype.com/artifact/com.tencent.map.geolocation/TencentLocationSdk-openplatform
-map-tencent-geolocation = "com.tencent.map.geolocation:TencentLocationSdk-openplatform:7.6.1.12"
+map-tencent-geolocation = "com.tencent.map.geolocation:TencentLocationSdk-openplatform:8.7.5.1"
 
 # https://github.com/googlemaps/android-maps-compose
 map-google = "com.google.maps.android:maps-compose:8.3.0"
