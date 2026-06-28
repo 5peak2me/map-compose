@@ -1,4 +1,3 @@
-import org.jetbrains.dokka.gradle.engine.plugins.DokkaHtmlPluginParameters
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -21,24 +20,18 @@ dependencies {
 
 dokka {
     dokkaPublications.html {
-        moduleName.set("ktx")
-        moduleVersion.set(providers.gradleProperty("artifact_version"))
-    }
-
-    pluginsConfiguration {
-        withType<DokkaHtmlPluginParameters>().configureEach {
-            customStyleSheets.from(layout.projectDirectory.file("docs/dokka/styles/ktx-dokka.css"))
-        }
+        moduleName.set("map-compose")
+        moduleVersion.set("1.0.0")
     }
 }
 
 subprojects {
     if (name != "app") {
-        group = "com.github.5peak2me.ktx"
+        group = "com.github.5peak2me.compose.map"
         version = "1.0.0"
 
         plugins.apply("maven-publish")
-//        plugins.apply("org.jetbrains.dokka")
+        plugins.apply("org.jetbrains.dokka")
 
         tasks.withType<KotlinCompile> {
             compilerOptions {

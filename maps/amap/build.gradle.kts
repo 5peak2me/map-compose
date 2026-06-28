@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.jetbrains.dokka.gradle.engine.parameters.KotlinPlatform
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
@@ -47,6 +48,11 @@ android {
     buildFeatures {
         resValues = false
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
 kotlin {
@@ -61,6 +67,22 @@ kotlin {
 //        // Use the set() function to ensure compatibility with older Gradle versions
 //        enabled.set(true)
 //    }
+}
+
+dokka {
+    dokkaSourceSets.register("release") {
+        analysisPlatform.set(KotlinPlatform.AndroidJVM)
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            register<MavenPublication>("release") {
+                from(components["release"])
+            }
+        }
+    }
 }
 
 composeCompiler {
