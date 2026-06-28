@@ -24,7 +24,6 @@ import com.baidu.mapapi.map.Circle
 import com.baidu.mapapi.map.Stroke
 import com.baidu.mapapi.model.LatLng
 import com.github.speak2me.compose.map.baidu.ktx.addCircle
-import kotlin.math.roundToInt
 
 internal class CircleNode(
     val circle: Circle,
@@ -71,7 +70,7 @@ public fun Circle(
                 setClickable(clickable)
                 fillColor(fillColor.toArgb())
                 radius(radius.toInt())
-                stroke(Stroke(strokeColor.toArgb(), strokeWidth.toInt()))
+                stroke(Stroke(strokeWidth, strokeColor.toArgb()))
 //                strokePattern(strokePattern)
                 visible(visible)
                 zIndex(zIndex.toInt())
@@ -86,9 +85,9 @@ public fun Circle(
             update(clickable) { this.circle.isClickable = it }
             update(fillColor) { this.circle.fillColor = it.toArgb() }
             update(radius) { this.circle.radius = it.toInt() }
-            update(strokeColor) { this.circle.stroke = Stroke(it.toArgb(), this.circle.stroke.strokeWidth) }
+            update(strokeColor) { this.circle.stroke = Stroke(this.circle.stroke.strokeWidth, it.toArgb()) }
 //            update(strokePattern) { this.circle.strokePattern = it }
-            update(strokeWidth) { this.circle.stroke = Stroke(this.circle.stroke.color, it.roundToInt()) }
+            update(strokeWidth) { this.circle.stroke = Stroke(it, this.circle.stroke.color) }
 //            update(tag) { this.circle.tag = it }
             update(visible) { this.circle.isVisible = it }
             update(zIndex) { this.circle.zIndex = it.toInt()}

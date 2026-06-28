@@ -26,8 +26,6 @@ import com.baidu.mapapi.map.Stroke
 import com.baidu.mapapi.model.LatLng
 import com.github.speak2me.compose.map.baidu.ktx.addPolygon
 import com.github.speak2me.compose.map.baidu.ktx.model.polygonHoleOptions
-import java.util.Collections.addAll
-import kotlin.math.roundToInt
 
 internal class PolygonNode(
     val polygon: Polygon,
@@ -84,7 +82,7 @@ public fun Polygon(
                 for (hole in holes) {
                     addHoleOption(polygonHoleOptions { addPoints(hole) })
                 }
-                stroke(Stroke(strokeWidth.toInt(), strokeColor.toArgb()))
+                stroke(Stroke(strokeWidth, strokeColor.toArgb()))
 //                strokeJointType(strokeJointType)
 //                strokePattern(strokePattern)
                 visible(visible)
@@ -101,11 +99,11 @@ public fun Polygon(
 //            update(geodesic) { this.polygon.isGeodesic = it }
             update(holes) { this.polygon.holeOptions = it.map { hole -> polygonHoleOptions { addPoints(hole) } } }
 
-            update(strokeColor) { this.polygon.stroke = Stroke(it.toArgb(), this.polygon.stroke.strokeWidth) }
+            update(strokeColor) { this.polygon.stroke = Stroke(this.polygon.stroke.strokeWidth, it.toArgb()) }
 
 //            update(strokeJointType) { this.polygon.strokeJointType = it }
 //            update(strokePattern) { this.polygon.strokePattern = it }
-            update(strokeWidth) { this.polygon.stroke = Stroke(this.polygon.stroke.color, it.roundToInt()) }
+            update(strokeWidth) { this.polygon.stroke = Stroke(it, this.polygon.stroke.color) }
 //            update(tag) { this.polygon.tag = it }
             update(visible) { this.polygon.isVisible = it }
             update(zIndex) { this.polygon.zIndex = it.toInt() }

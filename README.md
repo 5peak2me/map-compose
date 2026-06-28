@@ -1,343 +1,388 @@
-# Map Compose - 多平台地图集成框架
+# map-compose [![Version](https://jitpack.io/v/5peak2me/map-compose.svg)](https://jitpack.io/#5peak2me/map-compose)
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-blue.svg)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Jetpack%20Compose-1.7.0-blue.svg)](https://developer.android.com/jetpack/compose)
+[![Kotlin](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.kotlin&label=Kotlin&color=blue&logo=kotlin)](https://kotlinlang.org)
+[![Compose](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.composeBom&label=Compose&color=blue&logo=android)](https://developer.android.com/jetpack/compose)
+[![AGP](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.agp&label=AGP&color=blue&logo=android)](https://developer.android.com/build/releases/gradle-plugin)
 
-一个基于 Jetpack Compose 的多平台地图集成框架，支持高德、百度、腾讯和 Google 四种地图服务。
+`map-compose` 是一组面向 Jetpack Compose 的 Android 地图封装，让高德、百度、腾讯等原生地图 SDK 可以像普通 Compose 组件一样接入、组合和管理生命周期。
 
-## 📱 功能特性
+实际接入时主要使用 `maps/*` 模块；仓库中的 `app` 仅作为参考实现。
 
-- 🗺️ **多平台支持**: 高德地图、百度地图、腾讯地图、Google Maps
-- 🎨 **现代化UI**: 基于 Jetpack Compose 的声明式UI框架
-- 🚀 **高性能**: 支持 Compose 编译器，优化编译速度和性能
-- 🔧 **模块化设计**: 每个地图平台独立模块，按需引入
-- 📍 **位置服务**: 集成各平台的定位SDK
-- 💻 **开发友好**: 完整的Kotlin DSL配置和示例代码
+## 支持范围
 
-## 📦 项目结构
+- 高德地图：`maps:amap`
+- 百度地图：`maps:baidu`
+- 腾讯地图：`maps:tencent`
+- 华为地图：`maps:huawei`
 
-```
-map-compose/
-├── app/                     # 演示应用模块
-├── maps/                   # 地图集成模块
-│   ├── amap/              # 高德地图集成
-│   ├── baidu/             # 百度地图集成
-│   └── tencent/           # 腾讯地图集成
-├── elf-16k-alignment/     # ELF文件16K对齐优化插件
-└── build.gradle.kts       # 项目构建配置
-```
+封装层提供的核心能力：
 
-## 🛠️ 快速开始
+- `AMap`、`BaiduMap`、`TencentMap` 等 Compose 地图容器
+- `CameraPositionState`、`MapProperties`、`MapUiSettings`
+- `Marker`、`Polyline`、`Polygon`、`Circle`、`GroundOverlay`、`TileOverlay`
+- Compose 自定义 Marker / InfoWindow
+- 地图点击、POI 点击、加载完成等回调
+- `MapEffect` 访问底层原生地图对象
 
-### 1. 项目配置
+## 接入方式
+
+推荐先按源码模块接入，确认 API、SDK Key 和隐私初始化都跑通后，再按你的发布方式切换到远程依赖。
+
+### 1. 配置仓库
+
+在根项目 `settings.gradle.kts` 中确保有地图 SDK 所需仓库：
 
 ```kotlin
-// settings.gradle.kts
-include(":app")
-include(":elf-16k-alignment")
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://developer.huawei.com/repo/") } // 仅 Huawei 需要
+        maven { url = uri("https://jitpack.io") } // 使用 JitPack 产物时需要
+    }
+}
+```
+
+### 2. 引入模块
+
+源码接入时，把需要的平台模块加入 `settings.gradle.kts`：
+
+```kotlin
 include(":maps:amap")
 include(":maps:baidu")
 include(":maps:tencent")
 ```
 
+然后在 App 模块中按需依赖：
+
 ```kotlin
-// app/build.gradle.kts
 dependencies {
-    // 高德地图
     implementation(project(":maps:amap"))
-
-    // 百度地图
     implementation(project(":maps:baidu"))
-
-    // 腾讯地图
     implementation(project(":maps:tencent"))
 
-    // Google Maps (通过外部依赖)
-    implementation("com.google.maps.android:maps-compose:7.0.0")
+    // Google Maps 走官方 Compose 库
+    implementation("com.google.maps.android:maps-compose:8.3.0")
 }
 ```
 
-### 2. Application 初始化
+如果你使用 JitPack，请以 JitPack 页面实际生成的模块坐标为准，把上面的 `project(...)` 替换为远程依赖即可。
+
+### 3. 启用 Compose
+
+宿主 App 需要启用 Compose：
+
+```kotlin
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+```
+
+## Manifest 配置
+
+宿主 App 自己配置权限和各平台 Key。下面是常用最小集合，定位能力按业务需要增减：
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+```
+
+在 `<application>` 中配置地图 Key：
+
+```xml
+<!-- 高德 -->
+<meta-data
+    android:name="com.amap.api.v2.apikey"
+    android:value="${AMAP_KEY}" />
+
+<!-- 百度 -->
+<meta-data
+    android:name="com.baidu.lbsapi.API_KEY"
+    android:value="${BAIDU_MAP_KEY}" />
+
+<!-- Google -->
+<meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="${MAPS_API_KEY}" />
+
+<!-- 腾讯 -->
+<meta-data
+    android:name="TencentMapSDK"
+    android:value="${TENCENT_MAP_KEY}" />
+```
+
+如果使用百度定位，还需要注册定位 Service：
+
+```xml
+<service
+    android:name="com.baidu.location.f"
+    android:enabled="true"
+    android:process=":remote" />
+```
+
+你可以用 `secrets.properties`、CI 环境变量或自己的配置系统管理这些占位符：
+
+```properties
+AMAP_KEY=your_amap_key
+BAIDU_MAP_KEY=your_baidu_key
+MAPS_API_KEY=your_google_maps_key
+TENCENT_MAP_KEY=your_tencent_key
+```
+
+同时记得在各地图开放平台配置正确的包名、SHA-1、服务开关和配额。
+
+## Application 初始化
+
+各地图 SDK 对隐私合规初始化有要求。建议在用户同意隐私政策后、首次使用地图前执行初始化。
 
 ```kotlin
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // 初始化各地图平台
-        AMapInitializer.initialize(this)
-        BMapInitializer.initialize(this)
-        GMapInitializer.initialize(this)
-        TMapInitializer.initialize(this)
+        // 只初始化你的 App 实际接入的平台。
+        initAMap()
+        initBaiduMap()
+        initTencentMap()
+        initGoogleMap()
+    }
+
+    private fun initAMap() {
+        com.amap.api.maps.MapsInitializer.updatePrivacyShow(this, true, true)
+        com.amap.api.maps.MapsInitializer.updatePrivacyAgree(this, true)
+        com.amap.api.maps.MapsInitializer.initialize(this)
+
+        com.amap.api.location.AMapLocationClient.updatePrivacyShow(this, true, true)
+        com.amap.api.location.AMapLocationClient.updatePrivacyAgree(this, true)
+    }
+
+    private fun initBaiduMap() {
+        com.baidu.mapapi.SDKInitializer.setAgreePrivacy(this, true)
+        com.baidu.mapapi.SDKInitializer.initialize(this)
+        com.baidu.mapapi.SDKInitializer.setCoordType(com.baidu.mapapi.CoordType.BD09LL)
+        com.baidu.location.LocationClient.setAgreePrivacy(true)
+    }
+
+    private fun initTencentMap() {
+        com.tencent.tencentmap.mapsdk.maps.TencentMapInitializer.setAgreePrivacy(this, true)
+        com.tencent.tencentmap.mapsdk.maps.TencentMapInitializer.start(this)
+        com.tencent.map.geolocation.TencentLocationManager.setUserAgreePrivacy(true)
+    }
+
+    private fun initGoogleMap() {
+        com.google.android.gms.maps.MapsInitializer.initialize(this)
     }
 }
 ```
 
-### 3. 基础地图使用
+隐私接口的调用时机要以你 App 的合规流程为准，不要在用户未同意隐私政策前启动相关 SDK。
 
-#### 高德地图
+## 基础用法
+
+### 高德地图
 
 ```kotlin
-@Composable
-@AMapComposable
-fun AmapScreen() {
-    val mapState = rememberAmapState()
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import com.amap.api.maps.model.LatLng
+import com.github.speak2me.compose.map.amap.AMap
+import com.github.speak2me.compose.map.amap.Marker
+import com.github.speak2me.compose.map.amap.Polyline
+import com.github.speak2me.compose.map.amap.rememberCameraPositionState
+import com.github.speak2me.compose.map.amap.rememberUpdatedMarkerState
 
-    Amap(
-        mapState = mapState,
-        modifier = Modifier.fillMaxSize()
+@Composable
+fun AMapScreen() {
+    val cameraPositionState = rememberCameraPositionState()
+    val markerState = rememberUpdatedMarkerState(
+        position = LatLng(31.849193, 117.125301)
     )
+    val route = listOf(
+        LatLng(31.849193, 117.125301),
+        LatLng(31.850193, 117.126301)
+    )
+
+    AMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        onMapClick = { point ->
+            println("AMap clicked: $point")
+        }
+    ) {
+        Marker(state = markerState)
+        Polyline(points = route)
+    }
 }
 ```
 
-#### 百度地图
+### 百度地图
 
 ```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import com.baidu.mapapi.model.LatLng
+import com.github.speak2me.compose.map.baidu.BaiduMap
+import com.github.speak2me.compose.map.baidu.Marker
+import com.github.speak2me.compose.map.baidu.rememberCameraPositionState
+import com.github.speak2me.compose.map.baidu.rememberUpdatedMarkerState
+
 @Composable
-@BaiduMapComposable
 fun BaiduMapScreen() {
-    val mapState = rememberBaiduMapState()
+    val cameraPositionState = rememberCameraPositionState()
+    val markerState = rememberUpdatedMarkerState(
+        position = LatLng(31.849193, 117.125301)
+    )
 
     BaiduMap(
-        mapState = mapState,
-        modifier = Modifier.fillMaxSize()
-    )
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        onMapClick = { point ->
+            println("Baidu clicked: $point")
+        }
+    ) {
+        Marker(state = markerState)
+    }
 }
 ```
 
-#### 腾讯地图
+### 腾讯地图
 
 ```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import com.github.speak2me.compose.map.tencent.Marker
+import com.github.speak2me.compose.map.tencent.TencentMap
+import com.github.speak2me.compose.map.tencent.rememberCameraPositionState
+import com.github.speak2me.compose.map.tencent.rememberUpdatedMarkerState
+import com.tencent.tencentmap.mapsdk.maps.model.LatLng
+
 @Composable
-@TencentMapComposable
 fun TencentMapScreen() {
-    val mapState = rememberTencentMapState()
+    val cameraPositionState = rememberCameraPositionState()
+    val markerState = rememberUpdatedMarkerState(
+        position = LatLng(31.849193, 117.125301)
+    )
 
     TencentMap(
-        mapState = mapState,
-        modifier = Modifier.fillMaxSize()
-    )
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        onMapClick = { point ->
+            println("Tencent clicked: $point")
+        }
+    ) {
+        Marker(state = markerState)
+    }
 }
 ```
 
-#### Google Maps
+### Google Maps
+
+Google Maps 建议直接接官方 `maps-compose`：
 
 ```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberUpdatedMarkerState
+
 @Composable
 fun GoogleMapScreen() {
-    val mapState = rememberGoogleMapState()
+    val cameraPositionState = rememberCameraPositionState()
+    val markerState = rememberUpdatedMarkerState(
+        position = LatLng(31.849193, 117.125301)
+    )
 
     GoogleMap(
-        mapState = mapState,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState
+    ) {
+        Marker(state = markerState)
+    }
+}
+```
+
+## 地图状态与配置
+
+使用 `MapProperties` 控制地图类型、定位开关等地图属性；使用 `MapUiSettings` 控制缩放按钮、指南针、定位按钮等 UI 行为。
+
+```kotlin
+var properties by remember {
+    mutableStateOf(
+        MapProperties(
+            isMyLocationEnabled = true,
+            mapType = MapType.NORMAL
+        )
     )
 }
-```
 
-## 🚀 高级功能
-
-### 地图标记
-
-```kotlin
-@Composable
-fun MapWithMarkers() {
-    val mapState = rememberAmapState()
-    val markers = remember {
-        listOf(
-            LatLng(39.9042, 116.4074), // 北京
-            LatLng(31.2304, 121.4737)  // 上海
-        )
-    }
-
-    Amap(
-        mapState = mapState,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        markers.forEach { latLng ->
-            Marker(
-                position = latLng,
-                title = "标记点",
-                snippet = "这是一个示例标记"
-            )
-        }
-    }
-}
-```
-
-### 路线绘制
-
-```kotlin
-@Composable
-fun MapWithRoute() {
-    val mapState = rememberAmapState()
-    val polyline = remember {
-        listOf(
-            LatLng(39.9042, 116.4074), // 起点
-            LatLng(39.9142, 116.4174), // 途经点
-            LatLng(39.9242, 116.4274)  // 终点
-        )
-    }
-
-    Amap(
-        mapState = mapState,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Polyline(
-            points = polyline,
-            color = Color.Red,
-            width = 10f
-        )
-    }
-}
-```
-
-### 位置服务
-
-```kotlin
-@Composable
-fun LocationScreen() {
-    val locationPermissionHelper = rememberLocationPermissionHelper()
-    val lastLocation = remember { mutableStateOf<LatLng?>(null) }
-
-    if (locationPermissionHelper.hasPermission) {
-        // 获取当前位置
-        locationPermissionHelper.lastLocation?.let { location ->
-            lastLocation.value = LatLng(location.latitude, location.longitude)
-        }
-    } else {
-        // 请求位置权限
-        locationPermissionHelper.RequestPermission()
-    }
-}
-```
-
-## 🔧 依赖配置
-
-### Gradle 配置
-
-```kotlin
-// 项目根目录 build.gradle.kts
-plugins {
-    id("com.android.application") version "8.2.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
-    id("com.google.devtools.ksp") version "1.9.23-1.0.20" apply false
+val uiSettings = remember {
+    MapUiSettings(
+        compassEnabled = false,
+        myLocationButtonEnabled = true,
+        scaleControlsEnabled = true
+    )
 }
 
-// elf-16k-alignment 插件
-apply(plugin = "elf-16k-alignment")
-```
-
-### Manifest 权限配置
-
-```xml
-<!-- AndroidManifest.xml -->
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-<!-- 高德地图 -->
-<meta-data
-    android:name="com.amap.api.v2.apikey"
-    android:value="YOUR_AMAP_API_KEY" />
-
-<!-- 百度地图 -->
-<meta-data
-    android:name="com.baidu.lbsapi.API_KEY"
-    android:value="YOUR_BAIDU_API_KEY" />
-
-<!-- 腾讯地图 -->
-<meta-data
-    android:name="TencentMapSDK"
-    android:value="YOUR_TENCENT_API_KEY" />
-```
-
-## 📖 API 参考
-
-### 地图状态
-
-```kotlin
-// 地图状态接口
-interface MapState {
-    val cameraPosition: CameraPosition
-    val isLoaded: Boolean
-    val map: Any? // 实际的地图对象
-
-    fun moveCamera(cameraUpdate: CameraUpdate)
-    fun animateCamera(cameraUpdate: CameraUpdate)
-    fun addMarker(options: MarkerOptions): Marker
-    fun addPolyline(options: PolylineOptions): Polyline
-}
-```
-
-### 相机控制
-
-```kotlin
-// 相机更新
-sealed class CameraUpdate {
-    class ZoomTo(val zoom: Float) : CameraUpdate()
-    class MoveTo(val target: LatLng, val zoom: Float = 15f) : CameraUpdate()
-    class AnimatedMoveTo(val target: LatLng, val zoom: Float = 15f) : CameraUpdate()
-}
-
-// 相机位置
-data class CameraPosition(
-    val target: LatLng,
-    val zoom: Float,
-    val bearing: Float = 0f,
-    val tilt: Float = 0f
+AMap(
+    properties = properties,
+    uiSettings = uiSettings
 )
 ```
 
-## 🧪 测试
+`MapProperties`、`MapUiSettings` 和 `MapType` 位于各平台自己的 package 下。多平台同时接入时，建议显式 import，避免类型混淆。
+
+## 访问原生 SDK
+
+封装层没有覆盖的平台能力，可以用 `MapEffect` 获取原生地图对象：
 
 ```kotlin
-// 运行单元测试
-./gradlew test
+import com.github.speak2me.compose.map.amap.AMap
+import com.github.speak2me.compose.map.amap.MapEffect
+import com.github.speak2me.compose.map.amap.MapsComposeExperimentalApi
 
-// 运行Android测试
-./gradlew connectedAndroidTest
-
-// 运行特定模块测试
-./gradlew :app:test
+@OptIn(MapsComposeExperimentalApi::class)
+@Composable
+fun NativeAmapScreen() {
+    AMap {
+        MapEffect(Unit) { map ->
+            map.uiSettings.isScaleControlsEnabled = true
+        }
+    }
+}
 ```
 
-## 📝 许可证
+`MapEffect` 适合处理 SDK 专属设置、截图、原生监听器等能力。优先使用封装层已有的 Compose API；只有封装层没有暴露时再下沉到原生对象。
 
-本项目采用 [Apache License 2.0](LICENSE) 许可证。
+## 坐标系提醒
 
-## 🤝 贡献
+不同地图 SDK 的坐标系不同，接入时要统一你的业务数据坐标：
 
-欢迎提交 Issue 和 Pull Request！
+- 高德、腾讯通常使用 GCJ-02
+- 百度通常使用 BD-09LL
+- Google Maps 通常使用 WGS84
 
-### 开发环境设置
+如果同一份轨迹、POI 或路线要在多个地图上展示，需要在进入对应地图前完成坐标转换。
 
-1. 克隆项目
-```bash
-git clone https://github.com/your-username/map-compose.git
-cd map-compose
-```
+## 常见问题
 
-2. 打开项目
-```bash
-./gradlew build
-```
+地图空白时，优先检查 Key、包名、SHA-1、地图平台服务开关、设备网络、平台控制台限制，以及是否已经执行 SDK 初始化。
 
-3. 运行示例应用
-```bash
-./gradlew :app:installDebug
-```
+定位不生效时，检查运行时权限、系统定位开关、隐私合规初始化、后台定位策略，以及对应平台定位 SDK 是否已正确接入。
 
-## 📞 联系方式
+多平台混用时，注意每个平台的 `LatLng`、`MapType`、`Marker` 等类型不是同一个类，建议不要用通配符 import。
 
-- 项目地址: https://github.com/your-username/map-compose
-- 问题反馈: https://github.com/your-username/map-compose/issues
+## License
 
-## 🔗 相关链接
-
-- [Jetpack Compose 官方文档](https://developer.android.com/jetpack/compose)
-- [高德地图开放平台](https://lbs.amap.com/)
-- [百度地图开放平台](https://lbsyun.baidu.com/)
-- [腾讯地图开放平台](https://lbs.qq.com/)
-- [Google Maps Platform](https://developers.google.com/maps)
+源码文件头部声明使用 Apache License 2.0。
