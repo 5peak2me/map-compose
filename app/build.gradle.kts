@@ -7,25 +7,11 @@ plugins {
     alias(libs.plugins.secrets.gradle.plugin)
     id("kotlin-parcelize")
     kotlin("plugin.serialization") version "2.2.0"
-    id("elf-16k-alignment")
-}
-
-elfAlignment {
-    filter = false
-
-    maxAlign = 16384L
-
-    output {
-        csv = true
-        html = true
-        json = true
-        md = true
-    }
 }
 
 android {
     namespace = "com.github.speak2me.app.compose.map"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.github.speak2me.app.compose.map"
@@ -85,16 +71,16 @@ kotlin {
 }
 
 dependencies {
-    implementation("com.squareup.retrofit2:retrofit:3.0.0")
-    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
+    implementation(libs.retrofit2.retrofit)
+    implementation(libs.converter.kotlinx.serialization)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    implementation(libs.kotlinx.serialization.json)
     // define a BOM and its version
-    implementation(platform("com.squareup.okhttp3:okhttp-bom:5.3.2"))
+    implementation(platform(libs.okhttp.bom))
 
     // define any required OkHttp artifacts without version
-    implementation("com.squareup.okhttp3:okhttp")
-    implementation("com.squareup.okhttp3:logging-interceptor")
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
 
     implementation(project(":maps:amap"))
     implementation(project(":maps:baidu"))

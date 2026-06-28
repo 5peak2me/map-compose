@@ -46,8 +46,8 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import com.amap.api.maps.AMap
 import com.amap.api.maps.AMapOptions
 import com.amap.api.maps.LocationSource
-import com.amap.api.maps.MapView
-//import com.amap.api.maps.TextureMapView as MapView
+//import com.amap.api.maps.MapView
+import com.amap.api.maps.TextureMapView as MapView
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.Poi as PointOfInterest
 import com.github.speak2me.compose.map.amap.ktx.awaitMap

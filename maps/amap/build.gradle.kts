@@ -82,7 +82,6 @@ dependencies {
     implementation(libs.androidx.material3)
 
     api(libs.map.amap.location.search)
-//    api("com.amap.api:location:6.4.9")
 
     implementation(libs.androidx.core.ktx)
 //    implementation(libs.androidx.appcompat)

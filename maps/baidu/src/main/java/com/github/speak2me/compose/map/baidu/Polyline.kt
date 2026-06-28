@@ -194,13 +194,13 @@ private fun PolylineImpl(
                 color(color.toArgb())
 //                endCap(endCap)
                 lineCapType(lineCapType)
-//                geodesic(geodesic)
+                isGeodesic(geodesic)
 //                jointType(jointType)
                 lineJoinType(lineJoinType)
 //                pattern(pattern)
 //                startCap(startCap)
                 visible(visible)
-                width(width.toInt())
+                width(width)
                 zIndex(zIndex.toInt())
             } ?: error("Error adding Polyline")
 //            polyline.tag = tag
@@ -222,7 +222,7 @@ private fun PolylineImpl(
 //            update(startCap) { this.polyline.startCap = it }
 //            update(tag) { this.polyline.tag = it }
             update(visible) { this.polyline.isVisible = it }
-            update(width) { this.polyline.width = it }
+            update(width) { this.polyline.setWidth(it) }
             update(zIndex) { this.polyline.zIndex = it.toInt() }
         }
     )

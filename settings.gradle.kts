@@ -1,5 +1,4 @@
 pluginManagement {
-    includeBuild("elf-16k-alignment")
     repositories {
         google {
             content {
@@ -26,5 +25,5 @@ rootProject.name = "map-compose"
 include(":app")
 include(":maps:amap")
 include(":maps:baidu")
-//include(":maps:huawei")
+include(":maps:huawei")
 include(":maps:tencent")
