@@ -1,0 +1,5 @@
+jdk:
+  - openjdk17
+
+install:
+  - ./gradlew clean -Pjitpack=true -Pgroup=com.github.5peak2me -Pversion=1.0.0 -x test -x lint :maps:amap:publishToMavenLocal :maps:baidu:publishToMavenLocal :maps:huawei:publishToMavenLocal :maps:tencent:publishToMavenLocal --console=plain --info

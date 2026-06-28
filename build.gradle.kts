@@ -27,7 +27,7 @@ dokka {
 
 subprojects {
     if (name != "app") {
-        group = "com.github.5peak2me.compose.map"
+        group = "com.github.5peak2me"
         version = "1.0.0"
 
         plugins.apply("maven-publish")

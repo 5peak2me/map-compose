@@ -22,7 +22,12 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "map-compose"
-include(":app")
+
+val isJitPackBuild = gradle.startParameter.projectProperties.containsKey("jitpack")
+if (!isJitPackBuild) {
+    include(":app")
+}
+
 include(":maps:amap")
 include(":maps:baidu")
 include(":maps:huawei")
