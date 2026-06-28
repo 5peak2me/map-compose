@@ -25,7 +25,7 @@ plugins {
 
 android {
     namespace = "com.github.speak2me.lib.compose.amap"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24

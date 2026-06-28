@@ -24,7 +24,7 @@ plugins {
 
 android {
     namespace = "com.github.speak2me.lib.compose.map.baidu"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24

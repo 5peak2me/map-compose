@@ -24,7 +24,7 @@ plugins {
 
 android {
     namespace = "com.github.speak2me.lib.compose.map.huawei"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24
@@ -84,7 +84,7 @@ dependencies {
     implementation("com.huawei.hms:maps:6.11.0.304")
     implementation("dev.supasintatiyanupanwong.libraries.android.huawei.maps:maps-utils:1.0.0-alpha03")
 
-implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.ktx)
 //    implementation(libs.androidx.appcompat)
 //    implementation(libs.material)
     testImplementation(libs.junit)
