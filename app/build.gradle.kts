@@ -11,12 +11,12 @@ plugins {
 
 android {
     namespace = "com.github.speak2me.app.compose.map"
-    compileSdk = 37
+    compileSdk = libs.versions.compileSdk.get().toIntOrNull()
 
     defaultConfig {
         applicationId = "com.github.speak2me.app.compose.map"
-        minSdk = 24
-        targetSdk = 36
+        minSdk = libs.versions.minSdk.get().toIntOrNull()
+        targetSdk = libs.versions.targetSdk.get().toIntOrNull()
         versionCode = 1
         versionName = "1.0"
 

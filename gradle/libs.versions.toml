@@ -24,6 +24,10 @@ viewpager2 = "1.1.0"
 constraintlayout = "2.2.1"
 dokka = "2.2.0"
 
+compileSdk = "37"
+minSdk = "24"
+targetSdk = "37"
+
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

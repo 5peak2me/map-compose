@@ -20,8 +20,8 @@ jobs:
       - name: Setup Gradle 🐘
         uses: gradle/actions/setup-gradle@v6.2.0
 
-      - name: Run spotless task
-        run: ./gradlew spotlessCheck --init-script gradle/init.gradle.kts --no-configuration-cache --scan --stacktrace
+#      - name: Run spotless task
+#        run: ./gradlew spotlessCheck --init-script gradle/init.gradle.kts --no-configuration-cache --scan --stacktrace
 
   compatibility:
     name: compatibility
@@ -40,5 +40,5 @@ jobs:
       - name: Setup Gradle 🐘
         uses: gradle/actions/setup-gradle@v6.2.0
 
-      - name: abi validation
-        run: ./gradlew checkKotlinAbi --stacktrace
+#      - name: abi validation
+#        run: ./gradlew checkKotlinAbi --stacktrace

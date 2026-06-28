@@ -24,10 +24,10 @@ plugins {
 
 android {
     namespace = "com.github.speak2me.lib.compose.map.baidu"
-    compileSdk = 37
+    compileSdk = libs.versions.compileSdk.get().toIntOrNull()
 
     defaultConfig {
-        minSdk = 24
+        minSdk = libs.versions.minSdk.get().toIntOrNull()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
