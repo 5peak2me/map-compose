@@ -5,7 +5,7 @@
 [![AGP](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.agp&label=AGP&color=blue&logo=android)](https://developer.android.com/build/releases/gradle-plugin)
 [![compileSdk](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.compileSdk&label=compileSdk&color=green&logo=android)](https://developer.android.com/guide/)
 [![minSdk](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/libs.versions.toml&query=$.versions.minSdk&label=minSdk&color=green&logo=android)](https://developer.android.com/guide/)
-[![Gradle](https://img.shields.io/badge/dynamic/regex?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/wrapper/gradle-wrapper.properties&search=gradle-([0-9.]%2B)-(?:bin|all).zip&replace=$1&label=Gradle&color=blue&logo=gradle)](https://gradle.org)
+[![Gradle](https://img.shields.io/badge/dynamic/regex?url=https://raw.githubusercontent.com/5peak2me/map-compose/main/gradle/wrapper/gradle-wrapper.properties&search=gradle-([0-9.]%2B)-(?:bin%7Call).zip&replace=$1&label=Gradle&color=blue&logo=gradle)](https://gradle.org)
 
 `map-compose` 是一组面向 Jetpack Compose 的 Android 地图封装，让高德、百度、腾讯等原生地图 SDK 可以像普通 Compose 组件一样接入、组合和管理生命周期。
 
@@ -128,7 +128,6 @@ class App : Application() {
         initAMap()
         initBaiduMap()
         initTencentMap()
-        initGoogleMap()
     }
 
     private fun initAMap() {
@@ -151,10 +150,6 @@ class App : Application() {
         com.tencent.tencentmap.mapsdk.maps.TencentMapInitializer.setAgreePrivacy(this, true)
         com.tencent.tencentmap.mapsdk.maps.TencentMapInitializer.start(this)
         com.tencent.map.geolocation.TencentLocationManager.setUserAgreePrivacy(true)
-    }
-
-    private fun initGoogleMap() {
-        com.google.android.gms.maps.MapsInitializer.initialize(this)
     }
 }
 ```
@@ -231,6 +226,36 @@ fun BaiduMapScreen() {
 }
 ```
 
+### 华为地图
+```kotlin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
+import com.github.speak2me.compose.map.huawei.Marker
+import com.github.speak2me.compose.map.huawei.HuaweiMap
+import com.github.speak2me.compose.map.huawei.rememberCameraPositionState
+import com.github.speak2me.compose.map.huawei.rememberUpdatedMarkerState
+import com.huawei.hms.maps.model.LatLng
+
+@Composable
+fun HuaweiMapScreen() {
+    val cameraPositionState = rememberCameraPositionState()
+    val markerState = rememberUpdatedMarkerState(
+        position = LatLng(31.849193, 117.125301)
+    )
+
+    HuaweiMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        onMapClick = { point ->
+            println("Huawei clicked: $point")
+        }
+    ) {
+        Marker(state = markerState)
+    }
+}
+```
+
 ### 腾讯地图
 
 ```kotlin
@@ -256,36 +281,6 @@ fun TencentMapScreen() {
         onMapClick = { point ->
             println("Tencent clicked: $point")
         }
-    ) {
-        Marker(state = markerState)
-    }
-}
-```
-
-### Google Maps
-
-Google Maps 建议直接接官方 `maps-compose`：
-
-```kotlin
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.fillMaxSize
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberUpdatedMarkerState
-
-@Composable
-fun GoogleMapScreen() {
-    val cameraPositionState = rememberCameraPositionState()
-    val markerState = rememberUpdatedMarkerState(
-        position = LatLng(31.849193, 117.125301)
-    )
-
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
     ) {
         Marker(state = markerState)
     }
