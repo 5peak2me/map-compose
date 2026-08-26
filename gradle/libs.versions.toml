@@ -83,7 +83,7 @@ map-tencent-geolocation = "com.tencent.map.geolocation:TencentLocationSdk-openpl
 # https://github.com/googlemaps/android-maps-compose
 map-google = "com.google.maps.android:maps-compose:8.3.0"
 # https://github.com/googlemaps/android-maps-utils
-map-google-utils = "com.google.maps.android:android-maps-utils:4.4.0"
+map-google-utils = "com.google.maps.android:android-maps-utils:4.5.2"
 # https://github.com/googlemaps/android-maps-ktx
 #map-google-utils-ktx = "com.google.maps.android:maps-utils-ktx:5.2.1"
 map-google-location = "com.google.android.gms:play-services-location:21.3.0"
