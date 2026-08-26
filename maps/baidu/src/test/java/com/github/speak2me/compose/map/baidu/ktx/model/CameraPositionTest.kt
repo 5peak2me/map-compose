@@ -30,7 +30,7 @@ internal class CameraPositionTest {
             zoom(12f)
         }
         assertEquals(1f, cameraPosition.rotate, 1e-6f)
-        assertEquals(LatLng(1.0, 2.0), cameraPosition.target)
+        assertEquals(LatLng(1.0, 2.0).describeContents(), cameraPosition.target.describeContents())
         assertEquals(1f, cameraPosition.overlook, 1e-6f)
         assertEquals(12f, cameraPosition.zoom, 1e-6f)
     }

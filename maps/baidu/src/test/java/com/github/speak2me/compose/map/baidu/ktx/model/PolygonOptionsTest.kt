@@ -27,10 +27,10 @@ internal class PolygonOptionsTest {
     fun testBuilder() {
         val polygonOptions =
             polygonOptions {
-                stroke(Stroke(1, Color.BLACK))
+                stroke(Stroke(1f, Color.BLACK))
                 points(tracks)
             }
-        assertEquals(1, polygonOptions.stroke.strokeWidth)
+        assertEquals(1f, polygonOptions.stroke.strokeWidth)
         assertEquals(Color.BLACK, polygonOptions.stroke.color)
         assertEquals(tracks, polygonOptions.points)
     }

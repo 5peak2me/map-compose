@@ -11,6 +11,8 @@ plugins {
     alias(libs.plugins.jetbrains.dokka)
 }
 
+apply(from = "gradle/jacoco.gradle.kts")
+
 dependencies {
     subprojects {
         if (name == "app") return@subprojects
@@ -34,9 +36,12 @@ subprojects {
         plugins.apply("org.jetbrains.dokka")
 
         tasks.withType<KotlinCompile> {
+            val isTestCompilation = name.contains("Test", ignoreCase = true)
             compilerOptions {
                 jvmTarget = JvmTarget.JVM_11
-                freeCompilerArgs.add("-Xexplicit-api=strict")
+                if (!isTestCompilation) {
+                    freeCompilerArgs.add("-Xexplicit-api=strict")
+                }
                 freeCompilerArgs.add("-opt-in=kotlin.contracts.ExperimentalContracts")
             }
         }

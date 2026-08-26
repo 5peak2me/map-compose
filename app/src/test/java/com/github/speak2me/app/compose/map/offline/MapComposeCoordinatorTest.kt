@@ -84,7 +84,7 @@ class MapComposeCoordinatorTest {
 
         val metrics = resolver.resolve(
             containerSize = IntSize(1080, 720),
-            aspectRatio = 2f / 3f,
+            aspectRatio = 2f / 4f,
             projection = null,
             mapPlatform = UnusedMapPlatform
         )
@@ -106,17 +106,23 @@ class MapComposeCoordinatorTest {
     ) : FrameResolver {
         var lastFrameWidthMeters: Float? = null
 
-        override fun resolveFrame(
+        override fun resolve(
             containerSize: IntSize,
             aspectRatio: Float,
-            frameWidthMeters: Float?,
-        ): Rect {
-            return if (frameWidthMeters == null) {
-                initialFrame
-            } else {
-                lastFrameWidthMeters = frameWidthMeters
-                constrainedFrame
-            }
+            frameWidthMetersProvider: (Rect) -> Float,
+        ): FrameMetrics {
+            val initialFrameWidthMeters = frameWidthMetersProvider(initialFrame)
+            lastFrameWidthMeters = initialFrameWidthMeters
+            val constrainedFrameWidthMeters = frameWidthMetersProvider(constrainedFrame)
+            return FrameMetrics(
+                initialFrame = initialFrame,
+                initialFrameWidthMeters = initialFrameWidthMeters,
+                resolveFrame = constrainedFrame,
+                sizeInMeters = Size(
+                    width = constrainedFrameWidthMeters,
+                    height = constrainedFrameWidthMeters * aspectRatio,
+                ),
+            )
         }
     }
 

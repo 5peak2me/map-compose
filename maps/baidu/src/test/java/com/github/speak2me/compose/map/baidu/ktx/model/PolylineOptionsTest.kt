@@ -27,7 +27,7 @@ internal class PolylineOptionsTest {
             points(tracks)
             color(0)
             isGeodesic(true)
-            width(1)
+            width(1f)
         }
         assertEquals(tracks, polylineOptions.points)
         assertEquals(0, polylineOptions.color)

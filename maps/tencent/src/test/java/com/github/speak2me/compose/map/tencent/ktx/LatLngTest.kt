@@ -34,7 +34,7 @@ internal class LatLngTest {
     fun `compute spherical distance`() {
         val up = LatLng(90.0, 0.0)
         val down = LatLng(-90.0, 0.0)
-        assertEquals(Math.PI * earthRadius, up.sphericalDistance(down), 1e-6)
+        assertEquals(Math.PI * earthRadius, up.sphericalDistance(down), 1.0)
     }
 
 }

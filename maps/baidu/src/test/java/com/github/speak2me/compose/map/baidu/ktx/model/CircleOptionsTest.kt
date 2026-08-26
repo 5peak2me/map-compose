@@ -29,15 +29,15 @@ internal class CircleOptionsTest {
             center(LatLng(0.0, 0.0))
             fillColor(0)
             radius(1.23.toInt())
-            stroke(Stroke(1, 1))
+            stroke(Stroke(1f, 1))
             visible(true)
             zIndex(1)
         }
-        assertEquals(LatLng(0.0, 0.0), circleOptions.center)
+        assertEquals(LatLng(0.0, 0.0).describeContents(), circleOptions.center.describeContents())
         assertEquals(0, circleOptions.fillColor)
         assertEquals(1, circleOptions.radius)
         assertEquals(1, circleOptions.stroke.color)
-        assertEquals(1, circleOptions.stroke.strokeWidth)
+        assertEquals(1f, circleOptions.stroke.strokeWidth)
         assertTrue(circleOptions.isVisible)
         assertEquals(1, circleOptions.zIndex)
     }

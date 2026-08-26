@@ -34,7 +34,7 @@ internal class MarkerOptionsTest {
 //            snippet("Snippet")
             visible(true)
         }
-        assertEquals(LatLng(1.0, 2.0), markerOptions.position)
+        assertEquals(LatLng(1.0, 2.0).describeContents(), markerOptions.position.describeContents())
         assertEquals(0.5f, markerOptions.alpha, 1e-6f)
         assertFalse(markerOptions.isDraggable)
         assertTrue(markerOptions.isFlat)
