@@ -86,7 +86,7 @@ map-google = "com.google.maps.android:maps-compose:8.3.0"
 map-google-utils = "com.google.maps.android:android-maps-utils:5.0.0"
 # https://github.com/googlemaps/android-maps-ktx
 #map-google-utils-ktx = "com.google.maps.android:maps-utils-ktx:5.2.1"
-map-google-location = "com.google.android.gms:play-services-location:21.3.0"
+map-google-location = "com.google.android.gms:play-services-location:21.4.0"
 androidx-viewpager2 = { group = "androidx.viewpager2", name = "viewpager2", version.ref = "viewpager2" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
