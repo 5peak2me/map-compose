@@ -103,7 +103,7 @@ dependencies {
 //    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    implementation("com.huawei.hms:maps:6.11.0.304")
+    implementation("com.huawei.hms:maps:6.15.1.324")
     implementation("dev.supasintatiyanupanwong.libraries.android.huawei.maps:maps-utils:1.0.0-alpha03")
 
     implementation(libs.androidx.core.ktx)
