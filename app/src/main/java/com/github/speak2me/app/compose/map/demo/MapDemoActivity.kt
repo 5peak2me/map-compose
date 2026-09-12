@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
-import com.github.speak2me.app.compose.map.offline.MapComposeActivity
 import com.github.speak2me.app.compose.map.R
 import com.github.speak2me.app.compose.map.demo.amap.AMapActivity
 import com.github.speak2me.app.compose.map.demo.baidu.BaiduMapActivity
@@ -34,7 +33,6 @@ import com.github.speak2me.app.compose.map.demo.google.GoogleMapActivity
 import com.github.speak2me.app.compose.map.demo.google.test.MainActivity
 import com.github.speak2me.app.compose.map.demo.tencent.TencentMapActivity
 import com.github.speak2me.app.compose.map.demo.utils.LocationPermissionHelper.openLocationSettings
-import com.github.speak2me.app.compose.map.route.plan.RoutePlanActivity
 import com.github.speak2me.app.compose.map.ui.theme.MapComposeTheme
 
 class MapDemoActivity : ComponentActivity() {
@@ -61,18 +59,6 @@ class MapDemoActivity : ComponentActivity() {
                             text = getString(R.string.main_activity_title),
                             style = MaterialTheme.typography.headlineMedium
                         )
-                        Button(
-                            onClick = {
-                                context.startActivity(Intent(context, RoutePlanActivity::class.java))
-                            }) {
-                            Text("路线规划")
-                        }
-                        Button(
-                            onClick = {
-                                context.startActivity(Intent(context, MapComposeActivity::class.java))
-                            }) {
-                            Text("离线地图")
-                        }
                         MapMenu()
                         Button(
                             onClick = {
