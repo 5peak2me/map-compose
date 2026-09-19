@@ -69,7 +69,7 @@ map-baidu-base = { module = "com.baidu.lbsyun:base", version.ref = "map-baidu" }
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Util
 map-baidu-util = { module = "com.baidu.lbsyun:BaiduMapSDK_Util", version.ref = "map-baidu" }
 # https://central.sonatype.com/artifact/com.baidu.lbsyun/BaiduMapSDK_Location
-map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.6.9" }
+map-baidu-location = { module = "com.baidu.lbsyun:BaiduMapSDK_Location", version = "9.7.0" }
 
 # https://central.sonatype.com/artifact/com.tencent.map/tencent-map-vector-sdk
 map-tencent = "com.tencent.map:tencent-map-vector-sdk:6.13.0.260731.bb0666d5.209828299"
