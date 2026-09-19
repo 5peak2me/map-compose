@@ -1,0 +1,123 @@
+package com.github.speak2me.compose.map.amap.clustering.algo
+
+import androidx.collection.LruCache
+import com.github.speak2me.compose.map.amap.clustering.Cluster
+import com.github.speak2me.compose.map.amap.clustering.ClusterItem
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.withLock
+
+/**
+ * Optimistically fetch clusters for adjacent zoom levels, caching them as necessary.
+ */
+public class PreCachingAlgorithmDecorator<T : ClusterItem>(
+    private val algorithm: Algorithm<T>,
+) : AbstractAlgorithm<T>() {
+    // TODO: evaluate maxSize parameter for LruCache.
+    private val mCache = LruCache<Int, Set<Cluster<T>>>(5)
+    private val mCacheLock: ReadWriteLock = ReentrantReadWriteLock()
+    private val mExecutor: Executor = Executors.newCachedThreadPool()
+
+    override fun addItem(item: T): Boolean {
+        val result = algorithm.addItem(item)
+        if (result) {
+            clearCache()
+        }
+        return result
+    }
+
+    override fun addItems(items: Collection<T>): Boolean {
+        val result = algorithm.addItems(items)
+        if (result) {
+            clearCache()
+        }
+        return result
+    }
+
+    override fun clearItems() {
+        algorithm.clearItems()
+        clearCache()
+    }
+
+    override fun removeItem(item: T): Boolean {
+        val result = algorithm.removeItem(item)
+        if (result) {
+            clearCache()
+        }
+        return result
+    }
+
+    override fun removeItems(items: Collection<T>): Boolean {
+        val result = algorithm.removeItems(items)
+        if (result) {
+            clearCache()
+        }
+        return result
+    }
+
+    override fun updateItem(item: T): Boolean {
+        val result = algorithm.updateItem(item)
+        if (result) {
+            clearCache()
+        }
+        return result
+    }
+
+    private fun clearCache() {
+        mCache.evictAll()
+    }
+
+    override fun getClusters(zoom: Float): Set<Cluster<T>> {
+        val discreteZoom = zoom.toInt()
+        val results = getClustersInternal(discreteZoom)
+        // TODO: Check if requests are already in-flight.
+        if (mCache[discreteZoom + 1] == null) {
+            mExecutor.execute(PrecacheRunnable(discreteZoom + 1))
+        }
+        if (mCache[discreteZoom - 1] == null) {
+            mExecutor.execute(PrecacheRunnable(discreteZoom - 1))
+        }
+        return results
+    }
+
+    override val items: Collection<T>
+        get() = algorithm.items
+
+    override var maxDistanceBetweenClusteredItems: Int
+        get() = algorithm.maxDistanceBetweenClusteredItems
+        set(maxDistance) {
+            algorithm.maxDistanceBetweenClusteredItems = maxDistance
+            clearCache()
+        }
+
+    private fun getClustersInternal(discreteZoom: Int): Set<Cluster<T>> {
+        val cached = mCacheLock.readLock().withLock {
+            mCache[discreteZoom]
+        }
+        if (cached != null) {
+            return cached
+        }
+
+        return mCacheLock.writeLock().withLock {
+            mCache[discreteZoom] ?: algorithm.getClusters(discreteZoom.toFloat()).also {
+                mCache.put(discreteZoom, it)
+            }
+        }
+    }
+
+    private inner class PrecacheRunnable(
+        private val zoom: Int,
+    ) : Runnable {
+        override fun run() {
+            try {
+                // Wait between 500 - 1000 ms.
+                Thread.sleep((Math.random() * 500 + 500).toLong())
+            } catch (_: InterruptedException) {
+                // ignore. keep going.
+            }
+            getClustersInternal(zoom)
+        }
+    }
+}
