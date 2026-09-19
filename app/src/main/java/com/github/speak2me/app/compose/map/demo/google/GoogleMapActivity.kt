@@ -56,7 +56,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import kotlinx.coroutines.launch
 import com.github.speak2me.app.compose.map.demo.utils.drawBitmapWithBackground
-import com.github.speak2me.app.compose.map.route.plan.utils.CoordinateTransform.wgs84ToGcj02
 import com.google.maps.android.compose.AdvancedMarker
 
 class GoogleMapActivity : ComponentActivity() {

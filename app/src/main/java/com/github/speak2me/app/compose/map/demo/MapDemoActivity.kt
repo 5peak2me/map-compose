@@ -26,11 +26,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.github.speak2me.app.compose.map.MainActivity
 import com.github.speak2me.app.compose.map.R
 import com.github.speak2me.app.compose.map.demo.amap.AMapActivity
 import com.github.speak2me.app.compose.map.demo.baidu.BaiduMapActivity
 import com.github.speak2me.app.compose.map.demo.google.GoogleMapActivity
-import com.github.speak2me.app.compose.map.demo.google.test.MainActivity
 import com.github.speak2me.app.compose.map.demo.tencent.TencentMapActivity
 import com.github.speak2me.app.compose.map.demo.utils.LocationPermissionHelper.openLocationSettings
 import com.github.speak2me.app.compose.map.ui.theme.MapComposeTheme
@@ -60,12 +60,6 @@ class MapDemoActivity : ComponentActivity() {
                             style = MaterialTheme.typography.headlineMedium
                         )
                         MapMenu()
-                        Button(
-                            onClick = {
-                                context.startActivity(Intent(context, MainActivity::class.java))
-                            }) {
-                            Text("点击示例")
-                        }
                         Button(
                             onClick = {
                                 openLocationSettings(context)

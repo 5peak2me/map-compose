@@ -32,28 +32,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.speak2me.app.compose.map.singapore
+import com.amap.api.maps.model.CameraPosition
+import com.amap.api.maps.model.LatLng
 import com.github.speak2me.app.compose.map.singapore2
-import com.github.speak2me.compose.map.tencent.CameraPosition
-import com.github.speak2me.compose.map.tencent.MapsComposeExperimentalApi
-import com.github.speak2me.compose.map.tencent.MarkerInfoWindow
-import com.github.speak2me.compose.map.tencent.TencentMap
-import com.github.speak2me.compose.map.tencent.cluster.Clustering
-import com.github.speak2me.compose.map.tencent.cluster.rememberClusterManager
-import com.github.speak2me.compose.map.tencent.cluster.rememberClusterRenderer
-import com.github.speak2me.compose.map.tencent.rememberCameraPositionState
-import com.github.speak2me.compose.map.tencent.rememberUpdatedMarkerState
-import com.tencent.tencentmap.mapsdk.maps.model.LatLng
-import com.tencent.tencentmap.mapsdk.vector.utils.clustering.ClusterItem
-import com.tencent.tencentmap.mapsdk.vector.utils.clustering.algo.NonHierarchicalDistanceBasedAlgorithm
-import com.tencent.tencentmap.mapsdk.vector.utils.clustering.view.DefaultClusterRenderer
+import com.github.speak2me.compose.map.amap.AMap
+import com.github.speak2me.compose.map.amap.Circle
+import com.github.speak2me.compose.map.amap.MapsComposeExperimentalApi
+import com.github.speak2me.compose.map.amap.MarkerInfoWindow
+import com.github.speak2me.compose.map.amap.clustering.ClusterItem
+import com.github.speak2me.compose.map.amap.clustering.Clustering
+import com.github.speak2me.compose.map.amap.clustering.ClusteringMarkerProperties
+import com.github.speak2me.compose.map.amap.clustering.algo.NonHierarchicalViewBasedAlgorithm
+import com.github.speak2me.compose.map.amap.clustering.rememberClusterManager
+import com.github.speak2me.compose.map.amap.clustering.rememberClusterRenderer
+import com.github.speak2me.compose.map.amap.clustering.view.DefaultClusterRenderer
+import com.github.speak2me.compose.map.amap.rememberCameraPositionState
+import com.github.speak2me.compose.map.amap.rememberUpdatedMarkerState
 import kotlin.random.Random
 
 private val TAG = MarkerClusteringActivity::class.simpleName
@@ -93,7 +95,7 @@ fun AMapClustering(items: List<MyItem>) {
     var clusteringType by remember {
         mutableStateOf(ClusteringType.Default)
     }
-    TencentMap(
+    AMap(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = rememberCameraPositionState {
             position = CameraPosition.fromLatLngZoom(LatLng(31.820586, 117.227239), 6f)
@@ -114,6 +116,12 @@ fun AMapClustering(items: List<MyItem>) {
 
             ClusteringType.CustomRenderer -> {
                 CustomRendererClustering(
+                    items = items,
+                )
+            }
+
+            ClusteringType.Decorations -> {
+                DecorationsClustering(
                     items = items,
                 )
             }
@@ -160,6 +168,7 @@ private fun DefaultClustering(items: List<MyItem>) {
 @OptIn(MapsComposeExperimentalApi::class)
 @Composable
 private fun CustomUiClustering(items: List<MyItem>) {
+    var selectedItem by remember { mutableStateOf<MyItem?>(null) }
     Clustering(
         items = items,
         // Optional: Handle clicks on clusters, cluster items, and cluster item info windows
@@ -169,6 +178,7 @@ private fun CustomUiClustering(items: List<MyItem>) {
         },
         onClusterItemClick = {
             Log.d(TAG, "Cluster item clicked! $it")
+            selectedItem = if (selectedItem == it) null else it
             false
         },
         onClusterItemInfoWindowClick = {
@@ -178,12 +188,26 @@ private fun CustomUiClustering(items: List<MyItem>) {
         clusterContent = { cluster ->
             CircleContent(
                 modifier = Modifier.size(40.dp),
-                text = "%,d".format(cluster.size),
+                text = "%,d".format(Locale.current.platformLocale, cluster.size),
                 color = Color.Blue,
             )
         },
         // Optional: Custom rendering for non-clustered items
-        clusterItemContent = null,
+        clusterItemContent = { item ->
+            val isSelected = item == selectedItem
+            if (isSelected) {
+                ClusteringMarkerProperties(
+                    anchor = Offset(0.5f, 0.5f),
+                    zIndex = 1.0f
+                )
+            }
+            CircleContent(
+                modifier = Modifier.size(if (isSelected) 40.dp else 20.dp),
+                text = "",
+                color = if (isSelected) Color.Red else Color.Green,
+            )
+        },
+        clusterContentAnchor = Offset(0.5f, 0.5f),
         // Optional: Customization hook for clusterManager and renderer when they're ready
         onClusterManager = { clusterManager ->
             (clusterManager.renderer as DefaultClusterRenderer).minClusterSize = 2
@@ -202,17 +226,16 @@ fun CustomRendererClustering(items: List<MyItem>) {
     // Here the clusterManager is being customized with a NonHierarchicalViewBasedAlgorithm.
     // This speeds up by a factor the rendering of items on the screen.
     clusterManager?.setAlgorithm(
-        NonHierarchicalDistanceBasedAlgorithm(
-//            screenWidth.value.toInt(),
-//            screenHeight.value.toInt()
-            LocalContext.current
+        NonHierarchicalViewBasedAlgorithm(
+            screenWidth.value.toInt(),
+            screenHeight.value.toInt()
         )
     )
     val renderer = rememberClusterRenderer(
         clusterContent = { cluster ->
             CircleContent(
                 modifier = Modifier.size(40.dp),
-                text = "%,d".format(cluster.size),
+                text = "%,d".format(Locale.current.platformLocale, cluster.size),
                 color = Color.Green,
             )
         },
@@ -252,6 +275,24 @@ fun CustomRendererClustering(items: List<MyItem>) {
             clusterManager = clusterManager,
         )
     }
+
+}
+
+@OptIn(MapsComposeExperimentalApi::class)
+@Composable
+private fun DecorationsClustering(items: List<MyItem>) {
+    Clustering(
+        items = items,
+        clusterItemDecoration = { item ->
+            Circle(
+                center = item.position,
+                radius = 10000.0,
+                fillColor = Color.Blue.copy(alpha = 0.2f),
+                strokeColor = Color.Blue,
+                strokeWidth = 2f
+            )
+        }
+    )
 }
 
 @Composable
@@ -295,6 +336,7 @@ private fun ClusteringTypeControls(
                     ClusteringType.Default -> "Default"
                     ClusteringType.CustomUi -> "Custom UI"
                     ClusteringType.CustomRenderer -> "Custom Renderer"
+                    ClusteringType.Decorations -> "Decorations"
                 },
                 onClick = { onClusteringTypeClick(it) }
             )
@@ -312,7 +354,7 @@ private fun MapButton(text: String, onClick: () -> Unit, modifier: Modifier = Mo
         ),
         onClick = onClick
     ) {
-        Text(text = text, style = MaterialTheme.typography.bodyMedium)
+        Text(text = text, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -320,23 +362,12 @@ private enum class ClusteringType {
     Default,
     CustomUi,
     CustomRenderer,
+    Decorations,
 }
 
 data class MyItem(
-    val itemPosition: LatLng,
-    val itemTitle: String,
-    val itemSnippet: String,
-    val itemZIndex: Float,
-) : ClusterItem {
-    override fun getPosition(): LatLng =
-        itemPosition
-
-//    override fun getTitle(): String =
-//        itemTitle
-//
-//    override fun getSnippet(): String =
-//        itemSnippet
-//
-//    override fun getZIndex(): Float =
-//        itemZIndex
-}
+    override val position: LatLng,
+    override val title: String,
+    override val snippet: String,
+    override val zIndex: Float,
+) : ClusterItem

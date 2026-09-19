@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import android.text.format.DateFormat
-import com.github.speak2me.app.compose.map.route.plan.utils.CoordinateTransform.wgs84ToGcj02
+import com.github.speak2me.app.compose.map.demo.utils.CoordinateTransform.wgs84ToGcj02
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.LocationSource
@@ -71,6 +71,9 @@ class GoogleMapLocationSource(
     }
 
     private fun LatLng.toLocation(): Location {
-        return com.github.speak2me.app.compose.map.route.plan.ktx.Location(latitude, longitude)
+        return Location(null).apply {
+            latitude = this@toLocation.latitude
+            longitude = this@toLocation.longitude
+        }
     }
 }
