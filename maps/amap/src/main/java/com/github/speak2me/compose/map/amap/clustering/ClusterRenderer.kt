@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2026 J!nl!n™ Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.speak2me.compose.map.amap.clustering
 
 import android.content.Context
@@ -5,13 +20,13 @@ import android.graphics.Canvas
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.AbstractComposeView
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.createBitmap
 import androidx.core.view.doOnAttach
@@ -29,6 +44,7 @@ import com.amap.api.maps.model.BitmapDescriptor
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.MarkerOptions
 import com.github.speak2me.compose.map.amap.ComposeUiViewRenderer
+import com.github.speak2me.compose.map.amap.clustering.view.ClusterRenderer
 import com.github.speak2me.compose.map.amap.clustering.view.DefaultClusterRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.android.awaitFrame
@@ -43,7 +59,7 @@ internal interface ClusterRendererItemState<T : ClusterItem> {
 }
 
 /**
- * Implementation of [com.github.speak2me.compose.map.amap.clustering.view.ClusterRenderer] that renders marker bitmaps from Compose UI content.
+ * Implementation of [ClusterRenderer] that renders marker bitmaps from Compose UI content.
  * [clusterContentState] renders clusters, and [clusterItemContentState] renders non-clustered
  * items.
  */
@@ -112,7 +128,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                                 val anchor = props.anchor ?: clusterContentAnchorState.value
                                 setAnchor(anchor.x, anchor.y)
                                 zIndex = props.zIndex ?: clusterContentZIndexState.value
-//                                rotation = props.rotation ?: clusterContentRotationState.value
+                                rotateAngle = props.rotation ?: clusterContentRotationState.value
                             }
                         }
                         is ViewKey.Item -> {
@@ -121,7 +137,6 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                                 val anchor = props.anchor ?: clusterItemContentAnchorState.value
                                 setAnchor(anchor.x, anchor.y)
                                 zIndex = props.zIndex ?: clusterItemContentZIndexState.value
-//                                rotation = props.rotation ?: clusterItemContentRotationState.value
                                 rotateAngle = props.rotation ?: clusterItemContentRotationState.value
                             }
                         }
@@ -205,7 +220,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                 is ViewKey.Item -> {
                     { clusterItemContentState.value?.invoke(key.item) }
                 }
-            }
+            },
         )
         view.setViewTreeLifecycleOwner(fakeLifecycleOwner)
         view.setViewTreeSavedStateRegistryOwner(fakeSavedStateRegistryOwner)
@@ -228,7 +243,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
     /** Re-render the corresponding marker whenever [view] invalidates */
     private suspend fun collectInvalidationsAndRerender(
         key: ViewKey<T>,
-        view: InvalidatingComposeView
+        view: InvalidatingComposeView,
     ) {
         callbackFlow {
             // When invalidated, emit on the next frame
@@ -256,7 +271,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                             val anchor = view.properties.anchor ?: clusterContentAnchorState.value
                             setAnchor(anchor.x, anchor.y)
                             zIndex = view.properties.zIndex ?: clusterContentZIndexState.value
-//                            rotation = view.properties.rotation ?: clusterContentRotationState.value
+                            rotateAngle = view.properties.rotation ?: clusterContentRotationState.value
                         }
                     }
                     is ViewKey.Item -> {
@@ -265,7 +280,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                             val anchor = view.properties.anchor ?: clusterItemContentAnchorState.value
                             setAnchor(anchor.x, anchor.y)
                             zIndex = view.properties.zIndex ?: clusterItemContentZIndexState.value
-//                            rotation = view.properties.rotation ?: clusterItemContentRotationState.value
+                            rotateAngle = view.properties.rotation ?: clusterItemContentRotationState.value
                         }
                     }
                 }
@@ -280,7 +295,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
             val anchor = props?.anchor ?: clusterContentAnchorState.value
             markerOptions.anchor(anchor.x, anchor.y)
             markerOptions.zIndex(props?.zIndex ?: clusterContentZIndexState.value)
-//            markerOptions.rotation(props?.rotation ?: clusterContentRotationState.value)
+            markerOptions.rotateAngle(props?.rotation ?: clusterContentRotationState.value)
         }
     }
 
@@ -313,7 +328,6 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
             val anchor = props.anchor ?: clusterItemContentAnchorState.value
             markerOptions.anchor(anchor.x, anchor.y)
             markerOptions.zIndex(props.zIndex ?: clusterItemContentZIndexState.value)
-//            markerOptions.rotation(props.rotation ?: clusterItemContentRotationState.value)
             markerOptions.rotateAngle(props.rotation ?: clusterItemContentRotationState.value)
         }
     }
@@ -332,7 +346,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
         view.layout(0, 0, view.measuredWidth, view.measuredHeight)
         val bitmap = createBitmap(
             view.measuredWidth.takeIf { it > 0 } ?: 1,
-            view.measuredHeight.takeIf { it > 0 } ?: 1
+            view.measuredHeight.takeIf { it > 0 } ?: 1,
         )
         bitmap.applyCanvas {
             view.draw(this)
@@ -343,11 +357,11 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
 
     private sealed class ViewKey<T : ClusterItem> {
         data class Cluster<T : ClusterItem>(
-            val cluster: com.github.speak2me.compose.map.amap.clustering.Cluster<T>
+            val cluster: com.github.speak2me.compose.map.amap.clustering.Cluster<T>,
         ) : ViewKey<T>()
 
         data class Item<T : ClusterItem>(
-            val item: T
+            val item: T,
         ) : ViewKey<T>()
     }
 
@@ -380,7 +394,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                 invalidate()
             }
             CompositionLocalProvider(
-                LocalClusteringMarkerProperties provides properties
+                LocalClusteringMarkerProperties provides properties,
             ) {
                 content()
             }
@@ -398,4 +412,3 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
     }
 
 }
- 

@@ -1,12 +1,29 @@
+/*
+ * Copyright © 2026 J!nl!n™ Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.speak2me.compose.map.amap.clustering
 
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocal
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,8 +38,10 @@ import androidx.compose.ui.platform.LocalContext
 import com.amap.api.maps.AMap
 import com.github.speak2me.compose.map.amap.AMapComposable
 import com.github.speak2me.compose.map.amap.InputHandler
+import com.github.speak2me.compose.map.amap.MapApplier
 import com.github.speak2me.compose.map.amap.MapEffect
 import com.github.speak2me.compose.map.amap.MapsComposeExperimentalApi
+import com.github.speak2me.compose.map.amap.clustering.android.collections.MarkerManager
 import com.github.speak2me.compose.map.amap.clustering.view.ClusterRenderer
 import com.github.speak2me.compose.map.amap.clustering.view.DefaultClusterRenderer
 import com.github.speak2me.compose.map.amap.currentCameraPositionState
@@ -44,10 +63,10 @@ public class ClusteringMarkerProperties {
 }
 
 /**
- * [androidx.compose.runtime.CompositionLocal] used to provide [ClusteringMarkerProperties] to the content of a cluster or
+ * [CompositionLocal] used to provide [ClusteringMarkerProperties] to the content of a cluster or
  * cluster item.
  */
-public val LocalClusteringMarkerProperties: androidx.compose.runtime.ProvidableCompositionLocal<ClusteringMarkerProperties> =
+public val LocalClusteringMarkerProperties: ProvidableCompositionLocal<ClusteringMarkerProperties> =
     staticCompositionLocalOf { ClusteringMarkerProperties() }
 
 /**
@@ -536,12 +555,12 @@ private fun <T : ClusterItem> rememberClusterManager(
 
 /**
  * This is a hack.
- * [ClusterManager] instantiates a [com.github.speak2me.compose.map.amap.clustering.android.collections.MarkerManager], which posts a runnable to the UI thread that
+ * [ClusterManager] instantiates a [MarkerManager], which posts a runnable to the UI thread that
  * overwrites a bunch of [AMap]'s listeners. Many Maps composables rely on those listeners
- * being set by [com.github.speak2me.compose.map.amap.MapApplier].
+ * being set by [MapApplier].
  * This posts _another_ runnable which effectively undoes that, signaling MapApplier to set the
  * listeners again.
- * This is heavily coupled to implementation details of [com.github.speak2me.compose.map.amap.clustering.android.collections.MarkerManager].
+ * This is heavily coupled to implementation details of [MarkerManager].
  */
 @Composable
 private fun ResetMapListeners(
