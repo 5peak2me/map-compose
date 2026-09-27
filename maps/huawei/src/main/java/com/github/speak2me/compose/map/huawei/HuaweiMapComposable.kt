@@ -18,7 +18,7 @@ package com.github.speak2me.compose.map.huawei
 import androidx.compose.runtime.ComposableTargetMarker
 
 /**
- * An annotation that can be used to mark a composable function as being expected to be use in a
+ * An annotation that can be used to mark a composable function as being expected to be used in a
  * composable function that is also marked or inferred to be marked as a [HuaweiMapComposable].
  *
  * This will produce build warnings when [HuaweiMapComposable] composable functions are used outside

@@ -28,7 +28,7 @@ import kotlin.coroutines.CoroutineContext
  * re-launched when a different [key1] is provided.
  *
  * Note: This effect should be used with caution as the [HuaweiMap]'s properties is managed by the
- * [com.github.speak2me.compose.map.tencent.HuaweiMap] composable function. However,
+ * [com.github.speak2me.compose.map.huawei.HuaweiMap] composable function. However,
  * there are use cases when obtaining a raw reference to the map is desirable for extensibility
  * (e.g. using the utility library for clustering).
  */
@@ -48,7 +48,7 @@ public fun MapEffect(key1: Any?, block: suspend CoroutineScope.(HuaweiMap) -> Un
  * re-launched when a different [key1] or [key2] is provided.
  *
  * Note: This effect should be used with caution as the [HuaweiMap]'s properties is managed by the
- * [com.github.speak2me.compose.map.tencent.HuaweiMap] composable function. However,
+ * [com.github.speak2me.compose.map.huawei.HuaweiMap] composable function. However,
  * there are use cases when obtaining a raw reference to the map is desirable for extensibility
  * (e.g. using the utility library for clustering).
  */
@@ -68,7 +68,7 @@ public fun MapEffect(key1: Any?, key2: Any?, block: suspend CoroutineScope.(Huaw
  * re-launched when a different [key1], [key2], or [key3] is provided.
  *
  * Note: This effect should be used with caution as the [HuaweiMap]'s properties is managed by the
- * [com.github.speak2me.compose.map.tencent.HuaweiMap] composable function. However,
+ * [com.github.speak2me.compose.map.huawei.HuaweiMap] composable function. However,
  * there are use cases when obtaining a raw reference to the map is desirable for extensibility
  * (e.g. using the utility library for clustering).
  */
@@ -93,7 +93,7 @@ public fun MapEffect(
  * re-launched with any different [keys].
  *
  * Note: This effect should be used with caution as the [HuaweiMap]'s properties is managed by the
- * [com.github.speak2me.compose.map.tencent.HuaweiMap] composable function. However,
+ * [com.github.speak2me.compose.map.huawei.HuaweiMap] composable function. However,
  * there are use cases when obtaining a raw reference to the map is desirable for extensibility
  * (e.g. using the utility library for clustering).
  */

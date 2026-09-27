@@ -17,10 +17,13 @@ package com.github.speak2me.compose.map.huawei
 
 import android.content.ComponentCallbacks
 import android.content.ComponentCallbacks2
+import android.content.Context
 import android.content.res.Configuration
 import android.location.Location
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -42,6 +45,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.github.speak2me.compose.map.huawei.ktx.awaitMap
 import com.huawei.hms.maps.HuaweiMap
 import com.huawei.hms.maps.HuaweiMapOptions
@@ -51,6 +56,7 @@ import com.huawei.hms.maps.model.LatLng
 import com.huawei.hms.maps.model.PointOfInterest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
@@ -60,11 +66,15 @@ import kotlinx.coroutines.launch
  *
  * @param modifier Modifier to be applied to the HuaweiMap
  * @param mergeDescendants deactivates the map for accessibility purposes
+ * @param focusable whether the map participates in keyboard focus traversal. When true (the
+ * default), the map acts as a single focus stop so keyboard users can reach and control it. Set
+ * to false to remove the map from focus traversal entirely, e.g. when the map is used as a
+ * decorative background behind other focusable content.
  * @param cameraPositionState the [CameraPositionState] to be used to control or observe the map's
  * camera state
  * @param contentDescription the content description for the map used by accessibility services to
  * describe the map. If none is specified, the default is "Google Map".
- * @param tencentMapOptionsFactory the block for creating the [HuaweiMapOptions] provided when the
+ * @param huaweiMapOptionsFactory the block for creating the [HuaweiMapOptions] provided when the
  * map is created
  * @param properties the properties for the map
  * @param locationSource the [LocationSource] to be used to provide location data
@@ -84,9 +94,10 @@ import kotlinx.coroutines.launch
 public fun HuaweiMap(
     modifier: Modifier = Modifier,
     mergeDescendants: Boolean = false,
+    focusable: Boolean = true,
     cameraPositionState: CameraPositionState = rememberCameraPositionState(),
     contentDescription: String? = null,
-    tencentMapOptionsFactory: () -> HuaweiMapOptions = { HuaweiMapOptions() },
+    huaweiMapOptionsFactory: () -> HuaweiMapOptions = { HuaweiMapOptions() },
     properties: MapProperties = DefaultMapProperties,
     locationSource: LocationSource? = null,
     uiSettings: MapUiSettings = DefaultMapUiSettings,
@@ -98,7 +109,8 @@ public fun HuaweiMap(
     onMyLocationClick: ((Location) -> Unit)? = null,
     onPOIClick: ((PointOfInterest) -> Unit)? = null,
     contentPadding: PaddingValues = DefaultMapContentPadding,
-    mapColorScheme: ComposeMapColorScheme? = null,
+    mapColorScheme: ComposeMapColorScheme? = ComposeMapColorScheme.FOLLOW_SYSTEM,
+    mapViewFactory: (Context, HuaweiMapOptions) -> MapView = ::MapView,
     content: @Composable @HuaweiMapComposable () -> Unit = {},
 ) {
     // When in preview, early return a Box with the received modifier preserving layout
@@ -106,6 +118,15 @@ public fun HuaweiMap(
         Box(modifier = modifier)
         return
     }
+
+    // The Maps SDK measures Compose info-window content from its own Handler, asynchronously.
+    // If that measure lands after Compose has unparented the MapView (e.g. on LazyColumn
+    // recycling), the info window's ComposeView can no longer resolve a ViewTreeLifecycleOwner
+    // via its ancestors, since that tag lives on this AndroidView's holder rather than on the
+    // MapView itself. Pinning the owners directly onto the MapView keeps them resolvable from
+    // its own subtree regardless of where Compose has parented it.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val savedStateRegistryOwner = LocalSavedStateRegistryOwner.current
 
     // rememberUpdatedState and friends are used here to make these values observable to
     // the subcomposition without providing a new content function each recomposition
@@ -147,14 +168,27 @@ public fun HuaweiMap(
     val parentCompositionScope = rememberCoroutineScope()
 
     AndroidView(
-        modifier = modifier,
+        // Make the AndroidView wrapper focusable in Compose so the Compose focus
+        // system can target it during tab traversal, unless the caller opted the map
+        // out of focus traversal entirely.
+        modifier = if (focusable) modifier.focusable() else modifier,
         factory = { context ->
-            MapView(context, tencentMapOptionsFactory()).also { mapView ->
-//                MapsApiSettings.addInternalUsageAttributionId(context, AttributionId.VALUE )
+            val options = huaweiMapOptionsFactory()
+            cameraPositionState.isLiteMode = options.liteMode == true
+            mapViewFactory(context, options).also { mapView ->
+                mapView.applyFocusability(focusable)
+                mapView.setViewTreeLifecycleOwner(lifecycleOwner)
+                mapView.setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
+
                 val componentCallbacks = object : ComponentCallbacks2 {
                     override fun onConfigurationChanged(newConfig: Configuration) {}
-                    @Deprecated("Deprecated in Java", ReplaceWith("onTrimMemory(level)"))
-                    override fun onLowMemory() { /*mapView.onLowMemory()*/ }
+
+                    @Deprecated(
+                        "Deprecated in Java",
+                        ReplaceWith("onTrimMemory(level)")
+                    )
+                    override fun onLowMemory() {/*mapView.onLowMemory()*/ }
+
                     override fun onTrimMemory(level: Int) { /*mapView.onLowMemory()*/ }
                 }
                 context.registerComponentCallbacks(componentCallbacks)
@@ -191,6 +225,9 @@ public fun HuaweiMap(
             mapView.tag = null
         },
         update = { mapView ->
+            mapView.applyFocusability(focusable)
+            mapView.setViewTreeLifecycleOwner(lifecycleOwner)
+            mapView.setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
             if (subcompositionJob == null) {
                 subcompositionJob = parentCompositionScope.launchSubcomposition(
                     mapUpdaterState,
@@ -205,6 +242,23 @@ public fun HuaweiMap(
 }
 
 /**
+ * When [focusable] is true, treat the MapView as a single focus stop.
+ * FOCUS_BEFORE_DESCENDANTS ensures the map container gets focused first, and prevents the
+ * keyboard focus from tabbing through all internal map elements (like zoom buttons or the
+ * Google logo) by default.
+ * When [focusable] is false, remove the map and all of its internal elements from keyboard
+ * focus traversal altogether.
+ */
+private fun MapView.applyFocusability(focusable: Boolean) {
+    isFocusable = focusable
+    descendantFocusability = if (focusable) {
+        ViewGroup.FOCUS_BEFORE_DESCENDANTS
+    } else {
+        ViewGroup.FOCUS_BLOCK_DESCENDANTS
+    }
+}
+
+/**
  * Create and apply the [content] compositions to the map +
  * dispose the [Composition] when the parent composable is disposed.
  * */
@@ -216,7 +270,10 @@ private fun CoroutineScope.launchSubcomposition(
     content: @Composable @HuaweiMapComposable () -> Unit,
 ): Job {
     // Use [CoroutineStart.UNDISPATCHED] to kick off HuaweiMap loading immediately
-    return launch(start = CoroutineStart.UNDISPATCHED) {
+    return launch(
+        context = Dispatchers.Main,
+        start = CoroutineStart.UNDISPATCHED
+    ) {
         val map = mapView.awaitMap()
         val composition = Composition(
             applier = MapApplier(map, mapView, mapClickListeners),
@@ -283,7 +340,7 @@ public typealias HuaweiMapFactory = @Composable () -> Unit
  * @param content Any content to be added.
  */
 @Composable
-public fun tencentMapFactory(
+public fun huaweiMapFactory(
     modifier: Modifier = Modifier,
     cameraPositionState: CameraPositionState = rememberCameraPositionState(),
     onMapLoaded: () -> Unit = {},
@@ -373,9 +430,9 @@ private class MapLifecycleEventObserver(private val mapView: MapView) : Lifecycl
 }
 
 /**
- * Enum representing a 1-1 mapping to [com.tencent.tencentmap.mapsdk.maps.HuaweiMap.MAP_TYPE_NORMAL].
+ * Enum representing a 1-1 mapping to [com.huawei.hms.maps.HuaweiMap.MAP_TYPE_NORMAL].
  *
- * This enum provides equivalent values to facilitate usage with [com.tencent.tencentmap.mapsdk.maps.HuaweiMap].
+ * This enum provides equivalent values to facilitate usage with [com.huawei.hms.maps.HuaweiMap].
  *
  * @param value The integer value corresponding to each map color scheme.
  */

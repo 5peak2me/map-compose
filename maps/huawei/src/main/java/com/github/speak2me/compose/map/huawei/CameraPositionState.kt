@@ -34,7 +34,6 @@ import com.huawei.hms.maps.model.LatLng
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.lang.Integer.MAX_VALUE
@@ -42,10 +41,34 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /**
+ * Creates and remembers a [CameraPositionState] using [rememberSaveable].
+ *
+ * The camera position state is saved across configuration changes and process death,
+ * ensuring the map retains its last position.
+ *
+ * @param init A lambda that is called when the [CameraPositionState] is first created to
+ * configure its initial state, such as its position or zoom level.
+ */
+@Composable
+public inline fun rememberCameraPositionState(
+    crossinline init: CameraPositionState.() -> Unit = {}
+): CameraPositionState = rememberSaveable(saver = CameraPositionState.Saver) {
+    CameraPositionState().apply(init)
+}
+
+/**
  * Create and [rememberSaveable] a [CameraPositionState] using [CameraPositionState.Saver].
  * [init] will be called when the [CameraPositionState] is first created to configure its
- * initial state.
+ * initial state. Remember that the camera state can be applied when the map has been
+ * loaded.
  */
+@Deprecated(
+    message = "The 'key' parameter is deprecated. Please use the new `rememberCameraPositionState` function without a key.",
+    replaceWith = ReplaceWith(
+        "rememberCameraPositionState(init)",
+        "com.google.maps.android.compose.rememberCameraPositionState"
+    )
+)
 @Composable
 public inline fun rememberCameraPositionState(
     key: String? = null,
@@ -64,6 +87,8 @@ public inline fun rememberCameraPositionState(
 public class CameraPositionState private constructor(
     position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f)
 ) {
+    internal var isLiteMode: Boolean = false
+
     /**
      * Whether the camera is currently moving or not. This includes any kind of movement:
      * panning, zooming, or rotation.
@@ -87,6 +112,20 @@ public class CameraPositionState private constructor(
      */
     public val projection: Projection?
         get() = map?.projection
+
+    /**
+     * The minimum zoom level for the currently bound map, or `null` if this state is not currently
+     * bound to a [HuaweiMap].
+     */
+    public val minZoomLevel: Float?
+        get() = map?.minZoomLevel
+
+    /**
+     * The maximum zoom level for the currently bound map, or `null` if this state is not currently
+     * bound to a [HuaweiMap].
+     */
+    public val maxZoomLevel: Float?
+        get() = map?.maxZoomLevel
 
     /**
      * Local source of truth for the current camera position.
@@ -258,7 +297,13 @@ public class CameraPositionState private constructor(
         durationMs: Int,
         continuation: CancellableContinuation<Unit>
     ) {
-        val cancelableCallback = object : HuaweiMap.CancelableCallback {
+        if (isLiteMode) {
+            map.moveCamera(update)
+            continuation.resume(Unit)
+            return
+        }
+
+        val cancelableCallback = object : GoogleMap.CancelableCallback {
             override fun onCancel() {
                 continuation.resumeWithException(CancellationException("Animation cancelled"))
             }

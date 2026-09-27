@@ -15,13 +15,17 @@
  */
 package com.github.speak2me.compose.map.huawei
 
+import android.R.attr.contentDescription
+import android.view.View
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.StateFactoryMarker
+import androidx.compose.ui.UiComposable
 import androidx.compose.ui.geometry.Offset
 import com.github.speak2me.compose.map.huawei.ktx.addMarker
 import com.huawei.hms.maps.model.BitmapDescriptor
+import com.huawei.hms.maps.model.BitmapDescriptorFactory
 import com.huawei.hms.maps.model.LatLng
 import com.huawei.hms.maps.model.Marker
 import com.huawei.hms.maps.model.MarkerOptions as AdvancedMarkerOptions
@@ -116,7 +120,7 @@ public class MarkerState private constructor(position: LatLng) {
      * Shows the info window for the underlying marker.
      *
      * Not backed by Compose state to accommodate
-     * [com.tencent.tencentmap.mapsdk.maps.HuaweiMap] special semantics:
+     * [com.huawei.hms.maps.HuaweiMap] special semantics:
      * only a single info window can be visible for the entire HuaweiMap.
      *
      * Only use from Compose Effect APIs, never directly from composition, to avoid exceptions and
@@ -130,7 +134,7 @@ public class MarkerState private constructor(position: LatLng) {
      * Hides the info window for the underlying marker.
      *
      * Not backed by observable Compose state to accommodate
-     * [com.tencent.tencentmap.mapsdk.maps.HuaweiMap] special semantics:
+     * [com.huawei.hms.maps.HuaweiMap] special semantics:
      * only a single info window can be visible for the entire HuaweiMap.
      *
      * Only use from Compose Effect APIs, never directly from composition, to avoid
@@ -188,7 +192,7 @@ public class MarkerState private constructor(position: LatLng) {
         """
     )
 )
-public fun rememberUpdatedMarkerState(
+public fun rememberMarkerState(
     key: String? = null,
     position: LatLng = LatLng(0.0, 0.0)
 ): MarkerState = rememberSaveable(key = key, saver = MarkerState.Saver) {
@@ -325,7 +329,7 @@ public fun MarkerComposable(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    content: @Composable () -> Unit,
+    content: @UiComposable @Composable () -> Unit,
 ) {
     val icon = rememberComposeBitmapDescriptor(*keys) { content() }
 
@@ -354,13 +358,14 @@ public fun MarkerComposable(
 /**
  * A composable for a marker on the map wherein its entire info window can be
  * customized. If this customization is not required, use
- * [com.github.speak2me.compose.map.tencent.Marker].
+ * [com.github.speak2me.compose.map.huawei.Marker].
  *
  * @param state the [MarkerState] to be used to control or observe the marker
  * state such as its position and info window
  * @param alpha the alpha (opacity) of the marker
  * @param anchor the anchor for the marker image
  * @param draggable sets the draggability for the marker
+ * @param contentDescription the content description for accessibility purposes
  * @param flat sets if the marker should be flat against the map
  * @param icon sets the icon for the marker
  * @param infoWindowAnchor the anchor point of the info window on the marker image
@@ -384,6 +389,7 @@ public fun MarkerInfoWindow(
     alpha: Float = 1.0f,
     anchor: Offset = Offset(0.5f, 1.0f),
     draggable: Boolean = false,
+    contentDescription: String? = "",
     flat: Boolean = false,
     icon: BitmapDescriptor? = null,
     infoWindowAnchor: Offset = Offset(0.5f, 0.0f),
@@ -397,13 +403,14 @@ public fun MarkerInfoWindow(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    content: (@Composable (Marker) -> Unit)? = null
+    content: (@UiComposable @Composable (Marker) -> Unit)? = null
 ) {
     MarkerImpl(
         state = state,
         alpha = alpha,
         anchor = anchor,
         draggable = draggable,
+        contentDescription = contentDescription,
         flat = flat,
         icon = icon,
         infoWindowAnchor = infoWindowAnchor,
@@ -424,7 +431,7 @@ public fun MarkerInfoWindow(
 /**
  * A composable for a marker on the map wherein its entire info window and the marker itself can be
  * customized. If this customization is not required, use
- * [com.github.speak2me.compose.map.tencent.Marker].
+ * [com.github.speak2me.compose.map.huawei.Marker].
  *
  * @param keys unique keys representing the state of this Marker. Any changes to one of the key will
  * trigger a rendering of the content composable and thus the rendering of an updated marker.
@@ -469,8 +476,8 @@ public fun MarkerInfoWindowComposable(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    infoContent: (@Composable (Marker) -> Unit)? = null,
-    content: @Composable () -> Unit,
+    infoContent: (@UiComposable @Composable (Marker) -> Unit)? = null,
+    content: @UiComposable @Composable () -> Unit,
 ) {
     val icon = rememberComposeBitmapDescriptor(*keys) { content() }
 
@@ -499,7 +506,7 @@ public fun MarkerInfoWindowComposable(
 /**
  * A composable for a marker on the map wherein its info window contents can be
  * customized. If this customization is not required, use
- * [com.github.speak2me.compose.map.tencent.Marker].
+ * [com.github.speak2me.compose.map.huawei.Marker].
  *
  * @param state the [MarkerState] to be used to control or observe the marker
  * state such as its position and info window
@@ -542,7 +549,7 @@ public fun MarkerInfoWindowContent(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
-    content: (@Composable (Marker) -> Unit)? = null
+    content: (@UiComposable @Composable (Marker) -> Unit)? = null
 ) {
     MarkerImpl(
         state = state,
@@ -622,7 +629,7 @@ private fun MarkerImpl(
     ComposeNode<MarkerNode, MapApplier>(
         factory = {
             val marker = mapApplier?.map?.addMarker {
-//                contentDescription(contentDescription)
+                contentDescription(contentDescription)
                 alpha(alpha)
                 anchorMarker(anchor.x, anchor.y)
                 draggable(draggable)
@@ -706,6 +713,7 @@ private fun MarkerImpl(
  * @param onInfoWindowClick a lambda invoked when the marker's info window is clicked
  * @param onInfoWindowClose a lambda invoked when the marker's info window is closed
  * @param onInfoWindowLongClick a lambda invoked when the marker's info window is long clicked
+ * @param icon  sets the icon for the marker
  * @param pinConfig the PinConfig object that will be used for the advanced marker
  * @param iconView the custom view to be used on the advanced marker
  * @param collisionBehavior the expected collision behavior
@@ -730,6 +738,7 @@ public fun AdvancedMarker(
     onInfoWindowClick: (Marker) -> Unit = {},
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
+    icon: BitmapDescriptor? = null,
 //    pinConfig: PinConfig? = null,
 //    iconView: View? = null,
 //    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED
@@ -752,9 +761,174 @@ public fun AdvancedMarker(
         onInfoWindowClick = onInfoWindowClick,
         onInfoWindowClose = onInfoWindowClose,
         onInfoWindowLongClick = onInfoWindowLongClick,
+        icon = icon,
 //        pinConfig = pinConfig,
 //        iconView = iconView,
 //        collisionBehavior = collisionBehavior
+    )
+}
+
+/**
+ * A composable for an advanced marker on the map wherein its entire info window can be
+ * customized. If this customization is not required, use
+ * [com.google.maps.android.compose.AdvancedMarker].
+ *
+ * @param state the [MarkerState] to be used to control or observe the marker
+ * state such as its position and info window
+ * @param contentDescription the content description for accessibility purposes
+ * @param alpha the alpha (opacity) of the marker
+ * @param anchor the anchor for the marker image
+ * @param draggable sets the draggability for the marker
+ * @param flat sets if the marker should be flat against the map
+ * @param infoWindowAnchor the anchor point of the info window on the marker image
+ * @param rotation the rotation of the marker in degrees clockwise about the marker's anchor point
+ * @param snippet the snippet for the marker
+ * @param tag optional tag to associate with the marker
+ * @param title the title for the marker
+ * @param visible the visibility of the marker
+ * @param zIndex the z-index of the marker
+ * @param onClick a lambda invoked when the marker is clicked
+ * @param onInfoWindowClick a lambda invoked when the marker's info window is clicked
+ * @param onInfoWindowClose a lambda invoked when the marker's info window is closed
+ * @param onInfoWindowLongClick a lambda invoked when the marker's info window is long clicked
+ * @param icon sets the icon for the marker
+ * @param pinConfig the PinConfig object that will be used for the advanced marker
+ * @param iconView the custom view to be used on the advanced marker
+ * @param collisionBehavior the expected collision behavior
+ * @param content optional composable lambda expression for customizing the
+ * info window's content
+ */
+@Composable
+@GoogleMapComposable
+public fun AdvancedMarkerInfoWindow(
+    state: MarkerState = rememberUpdatedMarkerState(),
+    contentDescription: String? = "",
+    alpha: Float = 1.0f,
+    anchor: Offset = Offset(0.5f, 1.0f),
+    draggable: Boolean = false,
+    flat: Boolean = false,
+    infoWindowAnchor: Offset = Offset(0.5f, 0.0f),
+    rotation: Float = 0.0f,
+    snippet: String? = null,
+    tag: Any? = null,
+    title: String? = null,
+    visible: Boolean = true,
+    zIndex: Float = 0.0f,
+    onClick: (Marker) -> Boolean = { false },
+    onInfoWindowClick: (Marker) -> Unit = {},
+    onInfoWindowClose: (Marker) -> Unit = {},
+    onInfoWindowLongClick: (Marker) -> Unit = {},
+    icon: BitmapDescriptor? = null,
+    pinConfig: PinConfig? = null,
+    iconView: View? = null,
+    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
+    content: (@UiComposable @Composable (Marker) -> Unit)? = null,
+) {
+    AdvancedMarkerImpl(
+        state = state,
+        contentDescription = contentDescription,
+        alpha = alpha,
+        anchor = anchor,
+        draggable = draggable,
+        flat = flat,
+        infoWindowAnchor = infoWindowAnchor,
+        rotation = rotation,
+        snippet = snippet,
+        tag = tag,
+        title = title,
+        visible = visible,
+        zIndex = zIndex,
+        onClick = onClick,
+        onInfoWindowClick = onInfoWindowClick,
+        onInfoWindowClose = onInfoWindowClose,
+        onInfoWindowLongClick = onInfoWindowLongClick,
+        icon = icon,
+        pinConfig = pinConfig,
+        iconView = iconView,
+        collisionBehavior = collisionBehavior,
+        infoWindow = content,
+    )
+}
+
+/**
+ * A composable for an advanced marker on the map wherein its info window contents can be
+ * customized. If this customization is not required, use
+ * [com.google.maps.android.compose.AdvancedMarker].
+ *
+ * @param state the [MarkerState] to be used to control or observe the marker
+ * state such as its position and info window
+ * @param contentDescription the content description for accessibility purposes
+ * @param alpha the alpha (opacity) of the marker
+ * @param anchor the anchor for the marker image
+ * @param draggable sets the draggability for the marker
+ * @param flat sets if the marker should be flat against the map
+ * @param infoWindowAnchor the anchor point of the info window on the marker image
+ * @param rotation the rotation of the marker in degrees clockwise about the marker's anchor point
+ * @param snippet the snippet for the marker
+ * @param tag optional tag to associate with the marker
+ * @param title the title for the marker
+ * @param visible the visibility of the marker
+ * @param zIndex the z-index of the marker
+ * @param onClick a lambda invoked when the marker is clicked
+ * @param onInfoWindowClick a lambda invoked when the marker's info window is clicked
+ * @param onInfoWindowClose a lambda invoked when the marker's info window is closed
+ * @param onInfoWindowLongClick a lambda invoked when the marker's info window is long clicked
+ * @param icon sets the icon for the marker
+ * @param pinConfig the PinConfig object that will be used for the advanced marker
+ * @param iconView the custom view to be used on the advanced marker
+ * @param collisionBehavior the expected collision behavior
+ * @param content optional composable lambda expression for customizing the
+ * info window's content
+ */
+@Composable
+@GoogleMapComposable
+public fun AdvancedMarkerInfoWindowContent(
+    state: MarkerState = rememberUpdatedMarkerState(),
+    contentDescription: String? = "",
+    alpha: Float = 1.0f,
+    anchor: Offset = Offset(0.5f, 1.0f),
+    draggable: Boolean = false,
+    flat: Boolean = false,
+    infoWindowAnchor: Offset = Offset(0.5f, 0.0f),
+    rotation: Float = 0.0f,
+    snippet: String? = null,
+    tag: Any? = null,
+    title: String? = null,
+    visible: Boolean = true,
+    zIndex: Float = 0.0f,
+    onClick: (Marker) -> Boolean = { false },
+    onInfoWindowClick: (Marker) -> Unit = {},
+    onInfoWindowClose: (Marker) -> Unit = {},
+    onInfoWindowLongClick: (Marker) -> Unit = {},
+    icon: BitmapDescriptor? = null,
+    pinConfig: PinConfig? = null,
+    iconView: View? = null,
+    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
+    content: (@UiComposable @Composable (Marker) -> Unit)? = null,
+) {
+    AdvancedMarkerImpl(
+        state = state,
+        contentDescription = contentDescription,
+        alpha = alpha,
+        anchor = anchor,
+        draggable = draggable,
+        flat = flat,
+        infoWindowAnchor = infoWindowAnchor,
+        rotation = rotation,
+        snippet = snippet,
+        tag = tag,
+        title = title,
+        visible = visible,
+        zIndex = zIndex,
+        onClick = onClick,
+        onInfoWindowClick = onInfoWindowClick,
+        onInfoWindowClose = onInfoWindowClose,
+        onInfoWindowLongClick = onInfoWindowLongClick,
+        icon = icon,
+        pinConfig = pinConfig,
+        iconView = iconView,
+        collisionBehavior = collisionBehavior,
+        infoContent = content,
     )
 }
 
@@ -783,6 +957,7 @@ public fun AdvancedMarker(
  * the entire info window. If this value is non-null, the value in infoContent will be ignored.
  * @param infoContent optional composable lambda expression for customizing
  * the info window's content. If this value is non-null, [infoWindow] must be null.
+ * @param icon sets the icon for the marker
  * @param pinConfig the PinConfig object that will be used for the advanced marker
  * @param iconView the custom view to be used on the advanced marker
  * @param collisionBehavior the expected collision behavior
@@ -809,6 +984,7 @@ private fun AdvancedMarkerImpl(
     onInfoWindowLongClick: (Marker) -> Unit = {},
     infoWindow: (@Composable (Marker) -> Unit)? = null,
     infoContent: (@Composable (Marker) -> Unit)? = null,
+    icon: BitmapDescriptor? = null,
 //    pinConfig: PinConfig? = null,
 //    iconView: View? = null,
 //    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED
@@ -822,6 +998,12 @@ private fun AdvancedMarkerImpl(
             val advancedMarkerOptions = AdvancedMarkerOptions()
                 .position(state.position)
 //                .collisionBehavior(collisionBehavior)
+
+            // Determine the icon for the marker in order of precedence:
+            // 1. Use iconView if provided (takes full precedence and overrides all).
+            // 2. If no iconView, use pinConfig to generate a BitmapDescriptor.
+            // 3. If neither iconView nor pinConfig are available, fall back to the raw icon.
+
 //            if (iconView != null) {
 //                advancedMarkerOptions.iconView(iconView)
 //            } else if (pinConfig != null) {
@@ -882,15 +1064,20 @@ private fun AdvancedMarkerImpl(
                     this.marker.showInfoWindow()
                 }
             }
-//            update(pinConfig) {
-//                if (iconView == null) {
-//                    this.marker.setIcon(pinConfig?.let { it1 ->
-//                        BitmapDescriptorFactory.fromPinConfig(
-//                            it1
-//                        )
-//                    })
-//                }
-//            }
+            update(pinConfig) {
+                if (icon == null && iconView == null) {
+                    this.marker.setIcon(pinConfig?.let { it1 ->
+                        BitmapDescriptorFactory.fromPinConfig(
+                            it1
+                        )
+                    })
+                }
+            }
+            update(icon) {
+                if (iconView == null) {
+                    this.marker.setIcon(it)
+                }
+            }
 
             update(visible) { this.marker.isVisible = it }
             update(zIndex) { this.marker.zIndex = it }
