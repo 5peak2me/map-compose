@@ -43,8 +43,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.github.speak2me.compose.map.tencent.ktx.awaitMap
 import com.tencent.tencentmap.mapsdk.maps.LocationSource
@@ -109,8 +111,8 @@ public fun TencentMap(
     onPOIClick: ((PointOfInterest) -> Unit)? = null,
     contentPadding: PaddingValues = DefaultMapContentPadding,
     mapColorScheme: ComposeMapColorScheme? = null,
-    mapViewFactory: (Context, GoogleMapOptions) -> MapView = ::MapView,
-    content: @Composable @GoogleMapComposable () -> Unit = {},
+    mapViewFactory: (Context, TencentMapOptions) -> MapView = ::MapView,
+    content: @Composable @TencentMapComposable () -> Unit = {},
 ) {
     // When in preview, early return a Box with the received modifier preserving layout
     if (LocalInspectionMode.current) {

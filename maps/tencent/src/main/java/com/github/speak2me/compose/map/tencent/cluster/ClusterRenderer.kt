@@ -16,6 +16,8 @@ import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.createBitmap
 import androidx.core.view.doOnAttach
 import androidx.core.view.doOnDetach
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistry
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 internal interface ClusterRendererItemState<T : ClusterItem> {
     val unclusteredItems: State<Set<T>>
@@ -113,8 +116,8 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                                 val props = viewInfo.view.properties
                                 val anchor = props.anchor ?: clusterContentAnchorState.value
                                 setAnchor(anchor.x, anchor.y)
-                                zIndex = props.zIndex ?: clusterContentZIndexState.value
-                                rotateAngle = props.rotation ?: clusterContentRotationState.value
+                                zIndex = props.zIndex?.roundToInt() ?: clusterContentZIndexState.value.roundToInt()
+                                rotation = props.rotation ?: clusterContentRotationState.value
                             }
                         }
                         is ViewKey.Item -> {
@@ -122,8 +125,8 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                                 val props = viewInfo.view.properties
                                 val anchor = props.anchor ?: clusterItemContentAnchorState.value
                                 setAnchor(anchor.x, anchor.y)
-                                zIndex = props.zIndex ?: clusterItemContentZIndexState.value
-                                rotateAngle = props.rotation ?: clusterItemContentRotationState.value
+                                zIndex = props.zIndex?.roundToInt() ?: clusterItemContentZIndexState.value.roundToInt()
+                                rotation = props.rotation ?: clusterItemContentRotationState.value
                             }
                         }
                     }
@@ -256,8 +259,8 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                             setIcon(renderViewToBitmapDescriptor(view))
                             val anchor = view.properties.anchor ?: clusterContentAnchorState.value
                             setAnchor(anchor.x, anchor.y)
-                            zIndex = view.properties.zIndex ?: clusterContentZIndexState.value
-                            rotateAngle = view.properties.rotation ?: clusterContentRotationState.value
+                            zIndex = view.properties.zIndex?.roundToInt() ?: clusterContentZIndexState.value.roundToInt()
+                            rotation = view.properties.rotation ?: clusterContentRotationState.value
                         }
                     }
                     is ViewKey.Item -> {
@@ -265,8 +268,8 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
                             setIcon(renderViewToBitmapDescriptor(view))
                             val anchor = view.properties.anchor ?: clusterItemContentAnchorState.value
                             setAnchor(anchor.x, anchor.y)
-                            zIndex = view.properties.zIndex ?: clusterItemContentZIndexState.value
-                            rotateAngle = view.properties.rotation ?: clusterItemContentRotationState.value
+                            zIndex = view.properties.zIndex?.roundToInt() ?: clusterItemContentZIndexState.value.roundToInt()
+                            rotation = view.properties.rotation ?: clusterItemContentRotationState.value
                         }
                     }
                 }
@@ -281,26 +284,26 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
             val anchor = props?.anchor ?: clusterContentAnchorState.value
             markerOptions.anchor(anchor.x, anchor.y)
             markerOptions.zIndex(props?.zIndex ?: clusterContentZIndexState.value)
-            markerOptions.rotateAngle(props?.rotation ?: clusterContentRotationState.value)
+            markerOptions.rotation(props?.rotation ?: clusterContentRotationState.value)
         }
     }
 
-    override fun getDescriptorForCluster(cluster: Cluster<T>): BitmapDescriptor {
-        if (!scope.isActive) return super.getDescriptorForCluster(cluster)
-        return if (clusterContentState.value != null) {
-            val viewInfo = keysToViews[ViewKey.Cluster(cluster)]
-
-            if (viewInfo != null) {
-                renderViewToBitmapDescriptor(viewInfo.view)
-            } else {
-                cluster.computeViewKeys().firstOrNull()?.let { key ->
-                    renderViewToBitmapDescriptor(createAndAddView(key).view)
-                } ?: super.getDescriptorForCluster(cluster)
-            }
-        } else {
-            super.getDescriptorForCluster(cluster)
-        }
-    }
+//    override fun getDescriptorForCluster(cluster: Cluster<T>): BitmapDescriptor {
+//        if (!scope.isActive) return super.getDescriptorForCluster(cluster)
+//        return if (clusterContentState.value != null) {
+//            val viewInfo = keysToViews[ViewKey.Cluster(cluster)]
+//
+//            if (viewInfo != null) {
+//                renderViewToBitmapDescriptor(viewInfo.view)
+//            } else {
+//                cluster.computeViewKeys().firstOrNull()?.let { key ->
+//                    renderViewToBitmapDescriptor(createAndAddView(key).view)
+//                } ?: super.getDescriptorForCluster(cluster)
+//            }
+//        } else {
+//            super.getDescriptorForCluster(cluster)
+//        }
+//    }
 
     override fun onBeforeClusterItemRendered(item: T, markerOptions: MarkerOptions) {
         super.onBeforeClusterItemRendered(item, markerOptions)
@@ -314,7 +317,7 @@ internal class ComposeUiClusterRenderer<T : ClusterItem>(
             val anchor = props.anchor ?: clusterItemContentAnchorState.value
             markerOptions.anchor(anchor.x, anchor.y)
             markerOptions.zIndex(props.zIndex ?: clusterItemContentZIndexState.value)
-            markerOptions.rotateAngle(props.rotation ?: clusterItemContentRotationState.value)
+            markerOptions.rotation(props.rotation ?: clusterItemContentRotationState.value)
         }
     }
 

@@ -629,7 +629,7 @@ private fun MarkerImpl(
     ComposeNode<MarkerNode, MapApplier>(
         factory = {
             val marker = mapApplier?.map?.addMarker {
-                contentDescription(contentDescription)
+//                contentDescription(contentDescription)
                 alpha(alpha)
                 anchorMarker(anchor.x, anchor.y)
                 draggable(draggable)
@@ -799,7 +799,7 @@ public fun AdvancedMarker(
  * info window's content
  */
 @Composable
-@GoogleMapComposable
+@HuaweiMapComposable
 public fun AdvancedMarkerInfoWindow(
     state: MarkerState = rememberUpdatedMarkerState(),
     contentDescription: String? = "",
@@ -819,9 +819,9 @@ public fun AdvancedMarkerInfoWindow(
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
     icon: BitmapDescriptor? = null,
-    pinConfig: PinConfig? = null,
+//    pinConfig: PinConfig? = null,
     iconView: View? = null,
-    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
+//    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
     content: (@UiComposable @Composable (Marker) -> Unit)? = null,
 ) {
     AdvancedMarkerImpl(
@@ -843,9 +843,9 @@ public fun AdvancedMarkerInfoWindow(
         onInfoWindowClose = onInfoWindowClose,
         onInfoWindowLongClick = onInfoWindowLongClick,
         icon = icon,
-        pinConfig = pinConfig,
-        iconView = iconView,
-        collisionBehavior = collisionBehavior,
+//        pinConfig = pinConfig,
+//        iconView = iconView,
+//        collisionBehavior = collisionBehavior,
         infoWindow = content,
     )
 }
@@ -881,7 +881,7 @@ public fun AdvancedMarkerInfoWindow(
  * info window's content
  */
 @Composable
-@GoogleMapComposable
+@HuaweiMapComposable
 public fun AdvancedMarkerInfoWindowContent(
     state: MarkerState = rememberUpdatedMarkerState(),
     contentDescription: String? = "",
@@ -901,9 +901,9 @@ public fun AdvancedMarkerInfoWindowContent(
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
     icon: BitmapDescriptor? = null,
-    pinConfig: PinConfig? = null,
+//    pinConfig: PinConfig? = null,
     iconView: View? = null,
-    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
+//    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
     content: (@UiComposable @Composable (Marker) -> Unit)? = null,
 ) {
     AdvancedMarkerImpl(
@@ -925,9 +925,9 @@ public fun AdvancedMarkerInfoWindowContent(
         onInfoWindowClose = onInfoWindowClose,
         onInfoWindowLongClick = onInfoWindowLongClick,
         icon = icon,
-        pinConfig = pinConfig,
-        iconView = iconView,
-        collisionBehavior = collisionBehavior,
+//        pinConfig = pinConfig,
+//        iconView = iconView,
+//        collisionBehavior = collisionBehavior,
         infoContent = content,
     )
 }
@@ -1064,17 +1064,17 @@ private fun AdvancedMarkerImpl(
                     this.marker.showInfoWindow()
                 }
             }
-            update(pinConfig) {
-                if (icon == null && iconView == null) {
-                    this.marker.setIcon(pinConfig?.let { it1 ->
-                        BitmapDescriptorFactory.fromPinConfig(
-                            it1
-                        )
-                    })
-                }
-            }
+//            update(pinConfig) {
+//                if (icon == null && iconView == null) {
+//                    this.marker.setIcon(pinConfig?.let { it1 ->
+//                        BitmapDescriptorFactory.fromPinConfig(
+//                            it1
+//                        )
+//                    })
+//                }
+//            }
             update(icon) {
-                if (iconView == null) {
+                if (icon == null) {
                     this.marker.setIcon(it)
                 }
             }

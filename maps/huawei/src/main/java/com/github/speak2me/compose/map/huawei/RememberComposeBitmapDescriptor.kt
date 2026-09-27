@@ -15,6 +15,7 @@
  */
 package com.github.speak2me.compose.map.huawei
 
+import android.graphics.Canvas
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.Composable

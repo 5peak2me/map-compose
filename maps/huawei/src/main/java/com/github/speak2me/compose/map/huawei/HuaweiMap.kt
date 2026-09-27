@@ -44,8 +44,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.github.speak2me.compose.map.huawei.ktx.awaitMap
 import com.huawei.hms.maps.HuaweiMap
@@ -109,7 +111,7 @@ public fun HuaweiMap(
     onMyLocationClick: ((Location) -> Unit)? = null,
     onPOIClick: ((PointOfInterest) -> Unit)? = null,
     contentPadding: PaddingValues = DefaultMapContentPadding,
-    mapColorScheme: ComposeMapColorScheme? = ComposeMapColorScheme.FOLLOW_SYSTEM,
+    mapColorScheme: ComposeMapColorScheme? = null,
     mapViewFactory: (Context, HuaweiMapOptions) -> MapView = ::MapView,
     content: @Composable @HuaweiMapComposable () -> Unit = {},
 ) {

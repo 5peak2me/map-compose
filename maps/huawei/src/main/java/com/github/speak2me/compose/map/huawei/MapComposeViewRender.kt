@@ -28,6 +28,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.graphics.applyCanvas
+import androidx.core.graphics.createBitmap
 import com.github.speak2me.lib.compose.map.huawei.R
 import com.huawei.hms.maps.MapView
 import java.io.Closeable

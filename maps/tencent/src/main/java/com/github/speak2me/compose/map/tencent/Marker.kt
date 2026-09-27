@@ -807,7 +807,7 @@ public fun AdvancedMarker(
  * info window's content
  */
 @Composable
-@GoogleMapComposable
+@TencentMapComposable
 public fun AdvancedMarkerInfoWindow(
     state: MarkerState = rememberUpdatedMarkerState(),
     contentDescription: String? = "",
@@ -827,9 +827,9 @@ public fun AdvancedMarkerInfoWindow(
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
     icon: BitmapDescriptor? = null,
-    pinConfig: PinConfig? = null,
+//    pinConfig: PinConfig? = null,
     iconView: View? = null,
-    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
+//    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
     content: (@UiComposable @Composable (Marker) -> Unit)? = null,
 ) {
     AdvancedMarkerImpl(
@@ -851,9 +851,9 @@ public fun AdvancedMarkerInfoWindow(
         onInfoWindowClose = onInfoWindowClose,
         onInfoWindowLongClick = onInfoWindowLongClick,
         icon = icon,
-        pinConfig = pinConfig,
+//        pinConfig = pinConfig,
         iconView = iconView,
-        collisionBehavior = collisionBehavior,
+//        collisionBehavior = collisionBehavior,
         infoWindow = content,
     )
 }
@@ -889,7 +889,7 @@ public fun AdvancedMarkerInfoWindow(
  * info window's content
  */
 @Composable
-@GoogleMapComposable
+@TencentMapComposable
 public fun AdvancedMarkerInfoWindowContent(
     state: MarkerState = rememberUpdatedMarkerState(),
     contentDescription: String? = "",
@@ -909,9 +909,9 @@ public fun AdvancedMarkerInfoWindowContent(
     onInfoWindowClose: (Marker) -> Unit = {},
     onInfoWindowLongClick: (Marker) -> Unit = {},
     icon: BitmapDescriptor? = null,
-    pinConfig: PinConfig? = null,
+//    pinConfig: PinConfig? = null,
     iconView: View? = null,
-    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
+//    collisionBehavior: Int = AdvancedMarkerOptions.CollisionBehavior.REQUIRED,
     content: (@UiComposable @Composable (Marker) -> Unit)? = null,
 ) {
     AdvancedMarkerImpl(
@@ -933,9 +933,9 @@ public fun AdvancedMarkerInfoWindowContent(
         onInfoWindowClose = onInfoWindowClose,
         onInfoWindowLongClick = onInfoWindowLongClick,
         icon = icon,
-        pinConfig = pinConfig,
+//        pinConfig = pinConfig,
         iconView = iconView,
-        collisionBehavior = collisionBehavior,
+//        collisionBehavior = collisionBehavior,
         infoContent = content,
     )
 }

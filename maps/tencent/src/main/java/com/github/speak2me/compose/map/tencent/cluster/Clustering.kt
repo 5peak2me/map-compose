@@ -9,9 +9,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.UiComposable
@@ -145,7 +147,7 @@ public fun <T : ClusterItem> Clustering(
     clusterContentRotation: Float = 0.0f,
     clusterItemContentRotation: Float = 0.0f,
     clusterRenderer: ClusterRenderer<T>? = null,
-    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+    clusterItemDecoration: @Composable @TencentMapComposable (T) -> Unit = {},
 ) {
     val clusterManager = rememberClusterManager(
         clusterContent,
@@ -209,7 +211,7 @@ public fun <T : ClusterItem> Clustering(
     clusterItemContentZIndex: Float = 0.0f,
     clusterContentRotation: Float = 0.0f,
     clusterItemContentRotation: Float = 0.0f,
-    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+    clusterItemDecoration: @Composable @TencentMapComposable (T) -> Unit = {},
 ) {
     Clustering(
         items = items,
@@ -268,7 +270,7 @@ public fun <T : ClusterItem> Clustering(
     clusterItemContentZIndex: Float = 0.0f,
     clusterContentRotation: Float = 0.0f,
     clusterItemContentRotation: Float = 0.0f,
-    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+    clusterItemDecoration: @Composable @TencentMapComposable (T) -> Unit = {},
     onClusterManager: ((ClusterManager<T>) -> Unit)? = null,
 ) {
     val clusterManager = rememberClusterManager<T>()
@@ -322,7 +324,7 @@ public fun <T : ClusterItem> Clustering(
 public fun <T : ClusterItem> Clustering(
     items: Collection<T>,
     clusterManager: ClusterManager<T>,
-    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+    clusterItemDecoration: @Composable @TencentMapComposable (T) -> Unit = {},
 ) {
     Clustering(
         items = items,
@@ -333,12 +335,12 @@ public fun <T : ClusterItem> Clustering(
 }
 
 @Composable
-@AMapComposable
+@TencentMapComposable
 @MapsComposeExperimentalApi
 internal fun <T : ClusterItem> Clustering(
     items: Collection<T>,
     clusterManager: ClusterManager<T>,
-    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+    clusterItemDecoration: @Composable @TencentMapComposable (T) -> Unit = {},
     renderer: ClusterRenderer<T>? = null,
 ) {
     ResetMapListeners(clusterManager)
@@ -560,7 +562,7 @@ private fun ResetMapListeners(
 
 private class ReportingDefaultClusterRenderer<T : ClusterItem>(
     context: Context,
-    map: AMap,
+    map: TencentMap,
     clusterManager: ClusterManager<T>
 ) : DefaultClusterRenderer<T>(context, map, clusterManager), ClusterRendererItemState<T> {
 

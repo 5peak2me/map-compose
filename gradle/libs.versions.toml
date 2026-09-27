@@ -1,6 +1,6 @@
 [versions]
 accompanistPermissions = "0.37.3"
-agp = "9.3.3"
+agp = "9.4.1"
 converterKotlinxSerialization = "3.0.0"
 interpolator = "1.0.0"
 kotlin = "2.4.20"

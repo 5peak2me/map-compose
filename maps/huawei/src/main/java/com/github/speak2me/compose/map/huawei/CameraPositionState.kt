@@ -303,7 +303,7 @@ public class CameraPositionState private constructor(
             return
         }
 
-        val cancelableCallback = object : GoogleMap.CancelableCallback {
+        val cancelableCallback = object : HuaweiMap.CancelableCallback {
             override fun onCancel() {
                 continuation.resumeWithException(CancellationException("Animation cancelled"))
             }
