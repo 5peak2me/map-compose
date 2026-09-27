@@ -109,6 +109,7 @@ internal class MapApplier(
                 inputHandlerCallback = { onPolylineClick }
             )
         }
+
         // Marker
         map.setOnMarkerClickListener { marker ->
             decorations.findInputCallback<MarkerNode, Marker, Boolean>(
