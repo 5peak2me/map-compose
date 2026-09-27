@@ -20,7 +20,6 @@ import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.amap.api.maps.model.AMapPara
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.Polyline
 import com.amap.api.maps.model.PolylineOptions.LineCapType
@@ -147,7 +146,7 @@ public fun Polyline(
 }
 
 /**
- * Internal implementation for an advanced polyline on a Google map.
+ * Internal implementation for an advanced polyline on a AMap map.
  *
  * @param points the points comprising the polyline
  * @param spans style spans for the polyline

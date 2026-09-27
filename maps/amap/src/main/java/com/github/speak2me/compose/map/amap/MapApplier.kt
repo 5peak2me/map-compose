@@ -79,7 +79,7 @@ internal class MapApplier(
                 nodeMatchPredicate = { it.polyline == polyline },
                 nodeInputCallback = { onPolylineClick },
                 marker = polyline,
-                inputHandlerCallback = { onPolylineClick }
+                inputHandlerCallback = { onPolylineClick },
             )
         }
 
@@ -89,7 +89,7 @@ internal class MapApplier(
                 nodeMatchPredicate = { it.marker == marker },
                 marker = marker,
                 nodeInputCallback = { onMarkerClick },
-                inputHandlerCallback = { onMarkerClick }
+                inputHandlerCallback = { onMarkerClick },
             )
         }
         map.setOnInfoWindowClickListener { marker ->
@@ -97,85 +97,87 @@ internal class MapApplier(
                 nodeMatchPredicate = { it.marker == marker },
                 marker = marker,
                 nodeInputCallback = { onInfoWindowClick },
-                inputHandlerCallback = { onInfoWindowClick }
+                inputHandlerCallback = { onInfoWindowClick },
             )
         }
-        map.setOnMarkerDragListener(object : AMap.OnMarkerDragListener {
-            // We update MarkerState isDragging & position properties in a specific well-defined
-            // order: MarkerState.position is never updated by us unless
-            // MarkerState.isDragging == true. This avoids using Snapshots, which can fail to apply;
-            // they would not be meaningful here, because we are not the actual source of truth.
+        map.setOnMarkerDragListener(
+            object : AMap.OnMarkerDragListener {
+                // We update MarkerState isDragging & position properties in a specific well-defined
+                // order: MarkerState.position is never updated by us unless
+                // MarkerState.isDragging == true. This avoids using Snapshots, which can fail to apply;
+                // they would not be meaningful here, because we are not the actual source of truth.
 
-            override fun onMarkerDragStart(marker: Marker) {
-                decorations.findInputCallback<MarkerNode, Marker, Unit>(
-                    nodeMatchPredicate = { it.marker == marker },
-                    marker = marker,
-                    nodeInputCallback = {
-                        {
-                            val position = it.position
+                override fun onMarkerDragStart(marker: Marker) {
+                    decorations.findInputCallback<MarkerNode, Marker, Unit>(
+                        nodeMatchPredicate = { it.marker == marker },
+                        marker = marker,
+                        nodeInputCallback = {
+                            {
+                                val position = it.position
 
-                            markerState.isDragging = true
-                            // update position after enabling isDragging
-                            markerState.position = position
+                                markerState.isDragging = true
+                                // update position after enabling isDragging
+                                markerState.position = position
 
-                            @Suppress("DEPRECATION")
-                            markerState.dragState = DragState.START
-                        }
-                    },
-                    inputHandlerCallback = { onMarkerDragStart }
-                )
-            }
+                                @Suppress("DEPRECATION")
+                                markerState.dragState = DragState.START
+                            }
+                        },
+                        inputHandlerCallback = { onMarkerDragStart },
+                    )
+                }
 
-            override fun onMarkerDrag(marker: Marker) {
-                decorations.findInputCallback<MarkerNode, Marker, Unit>(
-                    nodeMatchPredicate = { it.marker == marker },
-                    nodeInputCallback = {
-                        {
-                            val position = it.position
+                override fun onMarkerDrag(marker: Marker) {
+                    decorations.findInputCallback<MarkerNode, Marker, Unit>(
+                        nodeMatchPredicate = { it.marker == marker },
+                        nodeInputCallback = {
+                            {
+                                val position = it.position
 
-                            markerState.isDragging = true // just in case, should be set already
-                            // update position after enabling isDragging
-                            markerState.position = position
+                                markerState.isDragging = true // just in case, should be set already
+                                // update position after enabling isDragging
+                                markerState.position = position
 
-                            @Suppress("DEPRECATION")
-                            markerState.dragState = DragState.DRAG
-                        }
-                    },
-                    marker = marker,
-                    inputHandlerCallback = { onMarkerDrag }
-                )
-            }
+                                @Suppress("DEPRECATION")
+                                markerState.dragState = DragState.DRAG
+                            }
+                        },
+                        marker = marker,
+                        inputHandlerCallback = { onMarkerDrag },
+                    )
+                }
 
-            override fun onMarkerDragEnd(marker: Marker) {
-                decorations.findInputCallback<MarkerNode, Marker, Unit>(
-                    nodeMatchPredicate = { it.marker == marker },
-                    marker = marker,
-                    nodeInputCallback = {
-                        {
-                            val position = it.position
+                override fun onMarkerDragEnd(marker: Marker) {
+                    decorations.findInputCallback<MarkerNode, Marker, Unit>(
+                        nodeMatchPredicate = { it.marker == marker },
+                        marker = marker,
+                        nodeInputCallback = {
+                            {
+                                val position = it.position
 
-                            markerState.isDragging = true // just in case, should be set already
-                            // update position after enabling isDragging
-                            markerState.position = position
-                            // disable isDragging after updating position
-                            markerState.isDragging = false
+                                markerState.isDragging = true // just in case, should be set already
+                                // update position after enabling isDragging
+                                markerState.position = position
+                                // disable isDragging after updating position
+                                markerState.isDragging = false
 
-                            @Suppress("DEPRECATION")
-                            markerState.dragState = DragState.END
-                        }
-                    },
-                    inputHandlerCallback = { onMarkerDragEnd }
-                )
-            }
-        })
+                                @Suppress("DEPRECATION")
+                                markerState.dragState = DragState.END
+                            }
+                        },
+                        inputHandlerCallback = { onMarkerDragEnd },
+                    )
+                }
+            },
+        )
         map.setInfoWindowAdapter(
             ComposeInfoWindowAdapter(
                 mapView,
                 markerNodeFinder = { marker ->
                     decorations.firstOrNull { it is MarkerNode && it.marker == marker }
-                            as MarkerNode?
-                }
-            )
+                        as MarkerNode?
+                },
+            ),
         )
     }
 }

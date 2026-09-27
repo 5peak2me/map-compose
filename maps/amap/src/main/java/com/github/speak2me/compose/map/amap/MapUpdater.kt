@@ -15,7 +15,6 @@
  */
 package com.github.speak2me.compose.map.amap
 
-import android.annotation.SuppressLint
 import android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -42,11 +41,11 @@ internal class MapPropertiesNode(
 
     init {
         map.accelerateNetworkInChinese(true)
-        applyContentPadding(mapView, contentPadding)
+        applyContentPadding(map, contentPadding)
         // set camera position after padding for correct centering
         cameraPositionState.setMap(map)
         if (contentDescription != null) {
-            mapView.setContentDescription(contentDescription)
+            mapView.contentDescription = contentDescription
         }
     }
 
@@ -124,7 +123,7 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
         update(layoutDirection) { this.layoutDirection = it }
         update(contentDescription) { this.contentDescription = it }
         update(contentPadding) {
-            applyContentPadding(mapView, it)
+            applyContentPadding(map, it)
         }
 
         set(locationSource) { map.setLocationSource(it) }
@@ -158,14 +157,14 @@ internal inline fun MapUpdater(mapUpdaterState: MapUpdaterState) = with(mapUpdat
     }
 }
 
-private fun MapPropertiesNode.applyContentPadding(map: MapView, contentPadding: PaddingValues) {
+private fun MapPropertiesNode.applyContentPadding(map: AMap, contentPadding: PaddingValues) {
     val node = this
     with (this.density) {
-        map.setPadding(
-            contentPadding.calculateLeftPadding(node.layoutDirection).roundToPx(),
-            contentPadding.calculateTopPadding().roundToPx(),
-            contentPadding.calculateRightPadding(node.layoutDirection).roundToPx(),
-            contentPadding.calculateBottomPadding().roundToPx()
-        )
+        val l = contentPadding.calculateLeftPadding(node.layoutDirection).roundToPx()
+        val t = contentPadding.calculateTopPadding().roundToPx()
+        val r = contentPadding.calculateRightPadding(node.layoutDirection).roundToPx()
+        val b = contentPadding.calculateBottomPadding().roundToPx()
+        map.uiSettings.setLogoBottomMargin(b)
+        map.setPointToCenter((mapView.width - l -r) / 2, (mapView.height - t - b) / 2)
     }
 }

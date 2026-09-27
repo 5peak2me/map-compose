@@ -1,9 +1,10 @@
 [versions]
 accompanistPermissions = "0.37.3"
-agp = "9.3.1"
+agp = "9.3.3"
 converterKotlinxSerialization = "3.0.0"
-kotlin = "2.4.10"
-coreKtx = "1.19.0"
+interpolator = "1.0.0"
+kotlin = "2.4.20"
+coreKtx = "1.19.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
@@ -11,10 +12,10 @@ espressoCore = "3.7.0"
 kotlinxSerializationJson = "1.11.0"
 lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
-composeBom = "2026.08.00"
+composeBom = "2026.09.00"
 #appcompat = "1.7.1"
 #material = "1.13.0"
-mockito = "5.23.0"
+mockito = "5.24.0"
 mockitoInline = "5.2.0"
 mockitoKotlin = "2.2.0"
 map-baidu = "8.1.0"
@@ -31,6 +32,7 @@ targetSdk = "37"
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-interpolator = { module = "androidx.interpolator:interpolator", version.ref = "interpolator" }
 converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "converterKotlinxSerialization" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

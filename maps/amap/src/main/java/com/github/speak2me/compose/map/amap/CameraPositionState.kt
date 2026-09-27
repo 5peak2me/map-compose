@@ -34,7 +34,6 @@ import com.amap.api.maps.model.LatLng
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.lang.Integer.MAX_VALUE
@@ -90,6 +89,20 @@ public class CameraPositionState private constructor(
      */
     public val projection: Projection?
         get() = map?.projection
+
+    /**
+     * The minimum zoom level for the currently bound map, or `null` if this state is not currently
+     * bound to a [AMap].
+     */
+    public val minZoomLevel: Float?
+        get() = map?.minZoomLevel
+
+    /**
+     * The maximum zoom level for the currently bound map, or `null` if this state is not currently
+     * bound to a [AMap].
+     */
+    public val maxZoomLevel: Float?
+        get() = map?.maxZoomLevel
 
     /**
      * Local source of truth for the current camera position.

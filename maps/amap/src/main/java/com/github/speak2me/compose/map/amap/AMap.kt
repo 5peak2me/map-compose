@@ -22,6 +22,8 @@ import android.content.res.Configuration
 import android.location.Location
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -42,7 +44,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.compose.LocalSavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.amap.api.maps.AMap
 import com.amap.api.maps.AMapOptions
 import com.amap.api.maps.LocationSource
@@ -63,10 +69,14 @@ import kotlinx.coroutines.launch
  *
  * @param modifier Modifier to be applied to the AMap
  * @param mergeDescendants deactivates the map for accessibility purposes
+ * @param focusable whether the map participates in keyboard focus traversal. When true (the
+ * default), the map acts as a single focus stop so keyboard users can reach and control it. Set
+ * to false to remove the map from focus traversal entirely, e.g. when the map is used as a
+ * decorative background behind other focusable content.
  * @param cameraPositionState the [CameraPositionState] to be used to control or observe the map's
  * camera state
  * @param contentDescription the content description for the map used by accessibility services to
- * describe the map. If none is specified, the default is "Google Map".
+ * describe the map. If none is specified, the default is "AMap".
  * @param aMapOptionsFactory the block for creating the [AMapOptions] provided when the
  * map is created
  * @param properties the properties for the map
@@ -79,7 +89,7 @@ import kotlinx.coroutines.launch
  * @param onMyLocationClick lambda invoked when the my location dot is clicked
  * @param onPOIClick lambda invoked when a POI is clicked
  * @param contentPadding the padding values used to signal that portions of the map around the edges
- * may be obscured. The map will move the Google logo, etc. to avoid overlapping the padding.
+ * may be obscured. The map will move the AMap logo, etc. to avoid overlapping the padding.
  * @param mapColorScheme Defines the color scheme for the Map.
  * @param content the content of the map
  */
@@ -87,6 +97,7 @@ import kotlinx.coroutines.launch
 public fun AMap(
     modifier: Modifier = Modifier,
     mergeDescendants: Boolean = false,
+    focusable: Boolean = true,
     cameraPositionState: CameraPositionState = rememberCameraPositionState(),
     contentDescription: String? = null,
     aMapOptionsFactory: () -> AMapOptions = { AMapOptions() },
@@ -110,6 +121,15 @@ public fun AMap(
         Box(modifier = modifier)
         return
     }
+
+    // The Maps SDK measures Compose info-window content from its own Handler, asynchronously.
+    // If that measure lands after Compose has unparented the MapView (e.g. on LazyColumn
+    // recycling), the info window's ComposeView can no longer resolve a ViewTreeLifecycleOwner
+    // via its ancestors, since that tag lives on this AndroidView's holder rather than on the
+    // MapView itself. Pinning the owners directly onto the MapView keeps them resolvable from
+    // its own subtree regardless of where Compose has parented it.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val savedStateRegistryOwner = LocalSavedStateRegistryOwner.current
 
     // rememberUpdatedState and friends are used here to make these values observable to
     // the subcomposition without providing a new content function each recomposition
@@ -151,13 +171,25 @@ public fun AMap(
     val parentCompositionScope = rememberCoroutineScope()
 
     AndroidView(
-        modifier = modifier,
+        // Make the AndroidView wrapper focusable in Compose so the Compose focus
+        // system can target it during tab traversal, unless the caller opted the map
+        // out of focus traversal entirely.
+        modifier = if (focusable) modifier.focusable() else modifier,
         factory = { context ->
-            mapViewFactory(context, aMapOptionsFactory()).also { mapView ->
+            val options = aMapOptionsFactory()
+
+            mapViewFactory(context, options).also { mapView ->
+                mapView.applyFocusability(focusable)
+                mapView.setViewTreeLifecycleOwner(lifecycleOwner)
+                mapView.setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
+
                 val componentCallbacks = object : ComponentCallbacks2 {
                     override fun onConfigurationChanged(newConfig: Configuration) {}
 
-                    @Deprecated("Deprecated in Java", ReplaceWith("onTrimMemory(level)"))
+                    @Deprecated(
+                        "Deprecated in Java",
+                        ReplaceWith("onTrimMemory(level)")
+                    )
                     override fun onLowMemory() {
                         mapView.onLowMemory()
                     }
@@ -200,6 +232,9 @@ public fun AMap(
             mapView.tag = null
         },
         update = { mapView ->
+            mapView.applyFocusability(focusable)
+            mapView.setViewTreeLifecycleOwner(lifecycleOwner)
+            mapView.setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
             if (subcompositionJob == null) {
                 subcompositionJob = parentCompositionScope.launchSubcomposition(
                     mapUpdaterState,
@@ -211,6 +246,23 @@ public fun AMap(
             }
         }
     )
+}
+
+/**
+ * When [focusable] is true, treat the MapView as a single focus stop.
+ * FOCUS_BEFORE_DESCENDANTS ensures the map container gets focused first, and prevents the
+ * keyboard focus from tabbing through all internal map elements (like zoom buttons or the
+ * AMap logo) by default.
+ * When [focusable] is false, remove the map and all of its internal elements from keyboard
+ * focus traversal altogether.
+ */
+private fun MapView.applyFocusability(focusable: Boolean) {
+    isFocusable = focusable
+    descendantFocusability = if (focusable) {
+        ViewGroup.FOCUS_BEFORE_DESCENDANTS
+    } else {
+        ViewGroup.FOCUS_BLOCK_DESCENDANTS
+    }
 }
 
 /**

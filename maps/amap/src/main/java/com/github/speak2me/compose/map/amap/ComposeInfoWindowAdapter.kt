@@ -15,9 +15,11 @@
  */
 package com.github.speak2me.compose.map.amap
 
-import android.graphics.Color
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Space
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import com.amap.api.maps.AMap
 //import com.amap.api.maps.MapView
@@ -50,15 +52,8 @@ internal class ComposeInfoWindowAdapter(
      */
     override fun getInfoContents(marker: Marker): View? {
         val markerNode = markerNodeFinder(marker) ?: return Space(mapView.context)
-        val content = markerNode.infoContent
-        if (content == null) {
-            return null
-        }
-        val view = ComposeView(mapView.context).apply {
-            setContent { content(marker) }
-        }
-        mapView.renderComposeViewOnce(view, parentContext = markerNode.compositionContext)
-        return view
+        val content = markerNode.infoContent ?: return null
+        return renderToImageView(markerNode) { content(marker) }
     }
 
     /**
@@ -68,16 +63,21 @@ internal class ComposeInfoWindowAdapter(
      */
     override fun getInfoWindow(marker: Marker): View? {
         val markerNode = markerNodeFinder(marker) ?: return Space(mapView.context)
-        val infoWindow = markerNode.infoWindow
-        if (infoWindow == null) {
-            return null
+        val infoWindow = markerNode.infoWindow ?: return null
+        return renderToImageView(markerNode) { infoWindow(marker) }
+    }
+
+    private fun renderToImageView(
+        markerNode: MarkerNode,
+        content: @Composable () -> Unit,
+    ): View? {
+        val bitmap = mapView.renderComposableToBitmap(markerNode.compositionContext, content)
+            ?: return null
+        return ImageView(mapView.context).apply {
+            layoutParams = ViewGroup.LayoutParams(bitmap.width, bitmap.height)
+            scaleType = ImageView.ScaleType.FIT_XY
+            setImageBitmap(bitmap)
         }
-        val view = ComposeView(mapView.context).apply {
-            setContent { infoWindow(marker) }
-            setBackgroundColor(Color.TRANSPARENT)
-        }
-        mapView.renderComposeViewOnce(view, parentContext = markerNode.compositionContext)
-        return view
     }
 
 }
