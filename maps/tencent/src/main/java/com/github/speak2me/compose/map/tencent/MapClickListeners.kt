@@ -66,7 +66,7 @@ internal class MapClickListeners {
 }
 
 /**
-87777777777777777777771` * @param L TencentMap click listener type, e.g. [OnMapClickListener]
+ * @param L TencentMap click listener type, e.g. [OnMapClickListener]
  */
 internal class MapClickListenerNode<L : Any>(
     private val map: TencentMap,

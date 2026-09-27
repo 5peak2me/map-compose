@@ -1,17 +1,21 @@
 package com.github.speak2me.compose.map.tencent.cluster
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.UiComposable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import com.github.speak2me.compose.map.tencent.InputHandler
 import com.github.speak2me.compose.map.tencent.MapEffect
@@ -31,6 +35,49 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 
 /**
+ * Properties for a marker in [Clustering].
+ */
+public class ClusteringMarkerProperties {
+    public var anchor: Offset? by mutableStateOf(null)
+        internal set
+    public var zIndex: Float? by mutableStateOf(null)
+        internal set
+    public var rotation: Float? by mutableStateOf(null)
+        internal set
+}
+
+/**
+ * [androidx.compose.runtime.CompositionLocal] used to provide [ClusteringMarkerProperties] to the content of a cluster or
+ * cluster item.
+ */
+public val LocalClusteringMarkerProperties: ProvidableCompositionLocal<ClusteringMarkerProperties> =
+    staticCompositionLocalOf { ClusteringMarkerProperties() }
+
+/**
+ * Helper function to specify properties for the marker representing a cluster or cluster item.
+ *
+ * @param anchor the anchor for the marker image. If null, the default anchor specified in
+ * [Clustering] will be used.
+ * @param zIndex the z-index of the marker. If null, the default z-index specified in [Clustering]
+ * will be used.
+ * @param rotation the rotation of the marker in degrees clockwise about the marker's anchor point.
+ * If null, the default rotation specified in [Clustering] will be used.
+ */
+@Composable
+public fun ClusteringMarkerProperties(
+    anchor: Offset? = null,
+    zIndex: Float? = null,
+    rotation: Float? = null,
+) {
+    val properties = LocalClusteringMarkerProperties.current
+    SideEffect {
+        properties.anchor = anchor
+        properties.zIndex = zIndex
+        properties.rotation = rotation
+    }
+}
+
+/**
  * Groups many items on a map based on zoom level.
  *
  * @param items all items to show
@@ -42,6 +89,12 @@ import kotlinx.coroutines.launch
  * window of a non-clustered item
  * @param clusterContent an optional Composable that is rendered for each [Cluster].
  * @param clusterItemContent an optional Composable that is rendered for each non-clustered item.
+ * @param clusterContentAnchor the anchor for the cluster image
+ * @param clusterItemContentAnchor the anchor for the non-clustered item image
+ * @param clusterContentZIndex the z-index of the cluster
+ * @param clusterItemContentZIndex the z-index of the non-clustered item
+ * @param clusterContentRotation the rotation of the cluster in degrees clockwise about the marker's anchor point
+ * @param clusterItemContentRotation the rotation of the non-clustered item in degrees clockwise about the marker's anchor point
  * @param clusterRenderer an optional ClusterRenderer that can be used to specify the algorithm used by the rendering.
  */
 @Composable
@@ -85,10 +138,26 @@ public fun <T : ClusterItem> Clustering(
     onClusterItemInfoWindowLongClick: (T) -> Unit = { },
     clusterContent: @[UiComposable Composable] ((Cluster<T>) -> Unit)? = null,
     clusterItemContent: @[UiComposable Composable] ((T) -> Unit)? = null,
+    clusterContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterItemContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterContentZIndex: Float = 0.0f,
+    clusterItemContentZIndex: Float = 0.0f,
+    clusterContentRotation: Float = 0.0f,
+    clusterItemContentRotation: Float = 0.0f,
     clusterRenderer: ClusterRenderer<T>? = null,
+    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
 ) {
-    val clusterManager = rememberClusterManager(clusterContent, clusterItemContent, clusterRenderer)
-        ?: return
+    val clusterManager = rememberClusterManager(
+        clusterContent,
+        clusterItemContent,
+        clusterContentAnchor,
+        clusterItemContentAnchor,
+        clusterContentZIndex,
+        clusterItemContentZIndex,
+        clusterContentRotation,
+        clusterItemContentRotation,
+        clusterRenderer
+    ) ?: return
 
     SideEffect {
         clusterManager.setOnClusterClickListener(onClusterClick)
@@ -99,6 +168,8 @@ public fun <T : ClusterItem> Clustering(
     Clustering(
         items = items,
         clusterManager = clusterManager,
+        clusterItemDecoration = clusterItemDecoration,
+        renderer = clusterManager.renderer,
     )
 }
 
@@ -114,6 +185,12 @@ public fun <T : ClusterItem> Clustering(
  * window of a non-clustered item
  * @param clusterContent an optional Composable that is rendered for each [Cluster].
  * @param clusterItemContent an optional Composable that is rendered for each non-clustered item.
+ * @param clusterContentAnchor the anchor for the cluster image
+ * @param clusterItemContentAnchor the anchor for the non-clustered item image
+ * @param clusterContentZIndex the z-index of the cluster
+ * @param clusterItemContentZIndex the z-index of the non-clustered item
+ * @param clusterContentRotation the rotation of the cluster in degrees clockwise about the marker's anchor point
+ * @param clusterItemContentRotation the rotation of the non-clustered item in degrees clockwise about the marker's anchor point
  */
 @Composable
 @TencentMapComposable
@@ -126,6 +203,13 @@ public fun <T : ClusterItem> Clustering(
     onClusterItemInfoWindowLongClick: (T) -> Unit = { },
     clusterContent: @[UiComposable Composable] ((Cluster<T>) -> Unit)? = null,
     clusterItemContent: @[UiComposable Composable] ((T) -> Unit)? = null,
+    clusterContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterItemContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterContentZIndex: Float = 0.0f,
+    clusterItemContentZIndex: Float = 0.0f,
+    clusterContentRotation: Float = 0.0f,
+    clusterItemContentRotation: Float = 0.0f,
+    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
 ) {
     Clustering(
         items = items,
@@ -135,6 +219,13 @@ public fun <T : ClusterItem> Clustering(
         onClusterItemInfoWindowLongClick = onClusterItemInfoWindowLongClick,
         clusterContent = clusterContent,
         clusterItemContent = clusterItemContent,
+        clusterContentAnchor = clusterContentAnchor,
+        clusterItemContentAnchor = clusterItemContentAnchor,
+        clusterContentZIndex = clusterContentZIndex,
+        clusterItemContentZIndex = clusterItemContentZIndex,
+        clusterContentRotation = clusterContentRotation,
+        clusterItemContentRotation = clusterItemContentRotation,
+        clusterItemDecoration = clusterItemDecoration,
         onClusterManager = null,
     )
 }
@@ -151,6 +242,12 @@ public fun <T : ClusterItem> Clustering(
  * window of a non-clustered item
  * @param clusterContent an optional Composable that is rendered for each [Cluster].
  * @param clusterItemContent an optional Composable that is rendered for each non-clustered item.
+ * @param clusterContentAnchor the anchor for the cluster image
+ * @param clusterItemContentAnchor the anchor for the non-clustered item image
+ * @param clusterContentZIndex the z-index of the cluster
+ * @param clusterItemContentZIndex the z-index of the non-clustered item
+ * @param clusterContentRotation the rotation of the cluster in degrees clockwise about the marker's anchor point
+ * @param clusterItemContentRotation the rotation of the non-clustered item in degrees clockwise about the marker's anchor point
  * @param onClusterManager an optional lambda invoked with the clusterManager as a param when both
  * the clusterManager and renderer are set up, allowing callers a customization hook.
  */
@@ -165,10 +262,27 @@ public fun <T : ClusterItem> Clustering(
     onClusterItemInfoWindowLongClick: (T) -> Unit = { },
     clusterContent: @[UiComposable Composable] ((Cluster<T>) -> Unit)? = null,
     clusterItemContent: @[UiComposable Composable] ((T) -> Unit)? = null,
+    clusterContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterItemContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterContentZIndex: Float = 0.0f,
+    clusterItemContentZIndex: Float = 0.0f,
+    clusterContentRotation: Float = 0.0f,
+    clusterItemContentRotation: Float = 0.0f,
+    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
     onClusterManager: ((ClusterManager<T>) -> Unit)? = null,
 ) {
     val clusterManager = rememberClusterManager<T>()
-    val renderer = rememberClusterRenderer(clusterContent, clusterItemContent, clusterManager)
+    val renderer = rememberClusterRenderer(
+        clusterContent,
+        clusterItemContent,
+        clusterContentAnchor,
+        clusterItemContentAnchor,
+        clusterContentZIndex,
+        clusterItemContentZIndex,
+        clusterContentRotation,
+        clusterItemContentRotation,
+        clusterManager
+    )
 
     SideEffect {
         clusterManager ?: return@SideEffect
@@ -190,6 +304,8 @@ public fun <T : ClusterItem> Clustering(
         Clustering(
             items = items,
             clusterManager = clusterManager,
+            clusterItemDecoration = clusterItemDecoration,
+            renderer = renderer,
         )
     }
 }
@@ -206,6 +322,24 @@ public fun <T : ClusterItem> Clustering(
 public fun <T : ClusterItem> Clustering(
     items: Collection<T>,
     clusterManager: ClusterManager<T>,
+    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+) {
+    Clustering(
+        items = items,
+        clusterManager = clusterManager,
+        clusterItemDecoration = clusterItemDecoration,
+        renderer = null
+    )
+}
+
+@Composable
+@AMapComposable
+@MapsComposeExperimentalApi
+internal fun <T : ClusterItem> Clustering(
+    items: Collection<T>,
+    clusterManager: ClusterManager<T>,
+    clusterItemDecoration: @Composable @AMapComposable (T) -> Unit = {},
+    renderer: ClusterRenderer<T>? = null,
 ) {
     ResetMapListeners(clusterManager)
     InputHandler(
@@ -240,6 +374,14 @@ public fun <T : ClusterItem> Clustering(
             clusterManager.cluster()
         }
     }
+
+    val actualRenderer = renderer ?: clusterManager.renderer
+    @Suppress("UNCHECKED_CAST")
+    val unclusteredItems by (actualRenderer as? ClusterRendererItemState<T>)?.unclusteredItems
+        ?: remember { mutableStateOf(emptySet()) }
+    for (item in unclusteredItems) {
+        clusterItemDecoration(item)
+    }
 }
 
 
@@ -254,7 +396,7 @@ public fun <T : ClusterItem> rememberClusterRenderer(
 
     clusterManager ?: return null
     MapEffect(context) { map ->
-        val renderer = DefaultClusterRenderer(context, map, clusterManager)
+        val renderer = ReportingDefaultClusterRenderer(context, map, clusterManager)
         clusterRendererState.value = renderer
     }
 
@@ -266,6 +408,12 @@ public fun <T : ClusterItem> rememberClusterRenderer(
  *
  * @param clusterContent an optional Composable that is rendered for each [Cluster].
  * @param clusterItemContent an optional Composable that is rendered for each non-clustered item.
+ * @param clusterContentAnchor the anchor for the cluster image
+ * @param clusterItemContentAnchor the anchor for the non-clustered item image
+ * @param clusterContentZIndex the z-index of the cluster
+ * @param clusterItemContentZIndex the z-index of the non-clustered item
+ * @param clusterContentRotation the rotation of the cluster in degrees clockwise about the marker's anchor point
+ * @param clusterItemContentRotation the rotation of the non-clustered item in degrees clockwise about the marker's anchor point
  */
 @Composable
 @TencentMapComposable
@@ -273,10 +421,22 @@ public fun <T : ClusterItem> rememberClusterRenderer(
 public fun <T : ClusterItem> rememberClusterRenderer(
     clusterContent: @Composable ((Cluster<T>) -> Unit)?,
     clusterItemContent: @Composable ((T) -> Unit)?,
+    clusterContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterItemContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterContentZIndex: Float = 0.0f,
+    clusterItemContentZIndex: Float = 0.0f,
+    clusterContentRotation: Float = 0.0f,
+    clusterItemContentRotation: Float = 0.0f,
     clusterManager: ClusterManager<T>?,
 ): ClusterRenderer<T>? {
     val clusterContentState = rememberUpdatedState(clusterContent)
     val clusterItemContentState = rememberUpdatedState(clusterItemContent)
+    val clusterContentAnchorState = rememberUpdatedState(clusterContentAnchor)
+    val clusterItemContentAnchorState = rememberUpdatedState(clusterItemContentAnchor)
+    val clusterContentZIndexState = rememberUpdatedState(clusterContentZIndex)
+    val clusterItemContentZIndexState = rememberUpdatedState(clusterItemContentZIndex)
+    val clusterContentRotationState = rememberUpdatedState(clusterContentRotation)
+    val clusterItemContentRotationState = rememberUpdatedState(clusterItemContentRotation)
     val context = LocalContext.current
     val viewRendererState = rememberUpdatedState(rememberComposeUiViewRenderer())
     val clusterRendererState: MutableState<ClusterRenderer<T>?> = remember { mutableStateOf(null) }
@@ -291,6 +451,12 @@ public fun <T : ClusterItem> rememberClusterRenderer(
             viewRendererState,
             clusterContentState,
             clusterItemContentState,
+            clusterContentAnchorState,
+            clusterItemContentAnchorState,
+            clusterContentZIndexState,
+            clusterItemContentZIndexState,
+            clusterContentRotationState,
+            clusterItemContentRotationState,
         )
         clusterRendererState.value = renderer
         awaitCancellation()
@@ -315,10 +481,22 @@ public fun <T : ClusterItem> rememberClusterManager(): ClusterManager<T>? {
 private fun <T : ClusterItem> rememberClusterManager(
     clusterContent: @Composable ((Cluster<T>) -> Unit)?,
     clusterItemContent: @Composable ((T) -> Unit)?,
+    clusterContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterItemContentAnchor: Offset = Offset(0.5f, 1.0f),
+    clusterContentZIndex: Float = 0.0f,
+    clusterItemContentZIndex: Float = 0.0f,
+    clusterContentRotation: Float = 0.0f,
+    clusterItemContentRotation: Float = 0.0f,
     clusterRenderer: ClusterRenderer<T>? = null,
 ): ClusterManager<T>? {
     val clusterContentState = rememberUpdatedState(clusterContent)
     val clusterItemContentState = rememberUpdatedState(clusterItemContent)
+    val clusterContentAnchorState = rememberUpdatedState(clusterContentAnchor)
+    val clusterItemContentAnchorState = rememberUpdatedState(clusterItemContentAnchor)
+    val clusterContentZIndexState = rememberUpdatedState(clusterContentZIndex)
+    val clusterItemContentZIndexState = rememberUpdatedState(clusterItemContentZIndex)
+    val clusterContentRotationState = rememberUpdatedState(clusterContentRotation)
+    val clusterItemContentRotationState = rememberUpdatedState(clusterItemContentRotation)
     val context = LocalContext.current
     val viewRendererState = rememberUpdatedState(rememberComposeUiViewRenderer())
     val clusterManagerState: MutableState<ClusterManager<T>?> = remember { mutableStateOf(null) }
@@ -332,7 +510,7 @@ private fun <T : ClusterItem> rememberClusterManager(
                 .collect { hasCustomContent ->
                     val renderer = clusterRenderer
                         ?: if (hasCustomContent) {
-                            ComposeUiClusterRenderer(
+                            ComposeUiClusterRenderer<T>(
                                 context,
                                 scope = this,
                                 map,
@@ -340,9 +518,15 @@ private fun <T : ClusterItem> rememberClusterManager(
                                 viewRendererState,
                                 clusterContentState,
                                 clusterItemContentState,
+                                clusterContentAnchorState,
+                                clusterItemContentAnchorState,
+                                clusterContentZIndexState,
+                                clusterItemContentZIndexState,
+                                clusterContentRotationState,
+                                clusterItemContentRotationState,
                             )
                         } else {
-                            DefaultClusterRenderer(context, map, clusterManager)
+                            ReportingDefaultClusterRenderer(context, map, clusterManager)
                         }
                     clusterManager.renderer = renderer
                 }
@@ -371,5 +555,21 @@ private fun ResetMapListeners(
         Handler(Looper.getMainLooper()).post {
             reattach()
         }
+    }
+}
+
+private class ReportingDefaultClusterRenderer<T : ClusterItem>(
+    context: Context,
+    map: AMap,
+    clusterManager: ClusterManager<T>
+) : DefaultClusterRenderer<T>(context, map, clusterManager), ClusterRendererItemState<T> {
+
+    override val unclusteredItems = mutableStateOf(emptySet<T>())
+
+    override fun onClustersChanged(clusters: Set<Cluster<T>>) {
+        super.onClustersChanged(clusters)
+        unclusteredItems.value = clusters.filter { !shouldRenderAsCluster(it) }
+            .flatMap { it.items }
+            .toSet()
     }
 }

@@ -16,7 +16,6 @@
 package com.github.speak2me.compose.map.tencent
 
 import androidx.compose.runtime.AbstractApplier
-import com.github.speak2me.compose.map.tencent.InputHandlerNode
 import com.github.speak2me.compose.map.tencent.ktx.setOnInfoWindowClickListener
 import com.tencent.tencentmap.mapsdk.maps.MapView
 import com.tencent.tencentmap.mapsdk.maps.TencentMap

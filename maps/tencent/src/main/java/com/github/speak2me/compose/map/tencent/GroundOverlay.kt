@@ -41,7 +41,8 @@ internal class GroundOverlayNode(
  *
  * Use one of the [create] methods to construct an instance of this class.
  */
-public class GroundOverlayPosition private constructor(
+@ConsistentCopyVisibility
+public data class GroundOverlayPosition internal constructor(
     public val latLngBounds: LatLngBounds? = null,
     public val location: LatLng? = null,
     public val width: Float? = null,
@@ -117,6 +118,11 @@ public fun GroundOverlay(
             update(transparency) { this.groundOverlay.setAlpha(it) }
             update(visible) { this.groundOverlay.setVisibility(it) }
             update(zIndex) { this.groundOverlay.setZindex(it.roundToInt()) }
+            update(anchor) {
+                // GroundOverlay does not have a setAnchor method.
+                // We could recreate the overlay here, but that might be expensive.
+                // For now, we'll document that anchor cannot be changed.
+            }
         }
     )
 }
