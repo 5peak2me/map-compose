@@ -60,14 +60,6 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_11)
         freeCompilerArgs.add("-XXLanguage:+ExplicitBackingFields")
     }
-    sourceSets.all {
-        // Must be explicitly enabled!
-        languageSettings.enableLanguageFeature("ExplicitBackingFields")
-    }
-    sourceSets.all {
-        // Must be explicitly enabled!
-        languageSettings.enableLanguageFeature("ExplicitBackingFields")
-    }
 }
 
 dependencies {
