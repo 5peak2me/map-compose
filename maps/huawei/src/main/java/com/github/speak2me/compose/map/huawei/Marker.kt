@@ -574,7 +574,7 @@ public fun MarkerInfoWindowContent(
 }
 
 /**
- * Internal implementation for a marker on a Google map.
+ * Internal implementation for a marker on a Huawei map.
  *
  * @param state the [MarkerState] to be used to control or observe the marker
  * state such as its position and info window
@@ -933,7 +933,7 @@ public fun AdvancedMarkerInfoWindowContent(
 }
 
 /**
- * Internal implementation for an advanced marker on a Google map.
+ * Internal implementation for an advanced marker on a Huawei map.
  *
  * @param state the [MarkerState] to be used to control or observe the marker
  * state such as its position and info window

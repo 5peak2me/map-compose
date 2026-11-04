@@ -51,29 +51,8 @@ import kotlin.coroutines.resumeWithException
  */
 @Composable
 public inline fun rememberCameraPositionState(
-    crossinline init: CameraPositionState.() -> Unit = {}
+    crossinline init: CameraPositionState.() -> Unit = {},
 ): CameraPositionState = rememberSaveable(saver = CameraPositionState.Saver) {
-    CameraPositionState().apply(init)
-}
-
-/**
- * Create and [rememberSaveable] a [CameraPositionState] using [CameraPositionState.Saver].
- * [init] will be called when the [CameraPositionState] is first created to configure its
- * initial state. Remember that the camera state can be applied when the map has been
- * loaded.
- */
-@Deprecated(
-    message = "The 'key' parameter is deprecated. Please use the new `rememberCameraPositionState` function without a key.",
-    replaceWith = ReplaceWith(
-        "rememberCameraPositionState(init)",
-        "com.google.maps.android.compose.rememberCameraPositionState"
-    )
-)
-@Composable
-public inline fun rememberCameraPositionState(
-    key: String? = null,
-    crossinline init: CameraPositionState.() -> Unit = {}
-): CameraPositionState = rememberSaveable(key = key, saver = CameraPositionState.Saver) {
     CameraPositionState().apply(init)
 }
 
@@ -85,7 +64,7 @@ public inline fun rememberCameraPositionState(
  * @param position the initial camera position
  */
 public class CameraPositionState private constructor(
-    position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f)
+    position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f),
 ) {
     internal var isLiteMode: Boolean = false
 
@@ -102,7 +81,7 @@ public class CameraPositionState private constructor(
      * [CameraMoveStartedReason.UNKNOWN] if an unknown constant is received from the Maps SDK.
      */
     public var cameraMoveStartedReason: CameraMoveStartedReason by mutableStateOf(
-        CameraMoveStartedReason.NO_MOVEMENT_YET
+        CameraMoveStartedReason.NO_MOVEMENT_YET,
     )
         internal set
 
@@ -144,6 +123,10 @@ public class CameraPositionState private constructor(
             synchronized(lock) {
                 val map = map
                 if (map == null) {
+                    // An explicit position overrides any pending move or animation.
+                    movementOwner = null
+                    onMapChanged?.onCancelLocked()
+                    onMapChanged = null
                     rawPosition = value
                 } else {
                     map.moveCamera(CameraUpdateFactory.newCameraPosition(value))
@@ -247,11 +230,11 @@ public class CameraPositionState private constructor(
                             override fun onMapChangedLocked(newMap: HuaweiMap?) {
                                 if (newMap == null) {
                                     // Cancel the animate caller and crash the map setter
-                                    @Suppress("ThrowableNotThrown")
-                                    continuation.resumeWithException(CancellationException(
-                                            "internal error; no HuaweiMap available"))
+                                    continuation.resumeWithException(
+                                        CancellationException("internal error; no HuaweiMap available"),
+                                    )
                                     error(
-                                        "internal error; no HuaweiMap available to animate position"
+                                        "internal error; no HuaweiMap available to animate position",
                                     )
                                 }
                                 performAnimateCameraLocked(newMap, update, durationMs, continuation)
@@ -259,7 +242,7 @@ public class CameraPositionState private constructor(
 
                             override fun onCancelLocked() {
                                 continuation.resumeWithException(
-                                    CancellationException("Animation cancelled")
+                                    CancellationException("Animation cancelled"),
                                 )
                             }
                         }
@@ -295,7 +278,7 @@ public class CameraPositionState private constructor(
         map: HuaweiMap,
         update: CameraUpdate,
         durationMs: Int,
-        continuation: CancellableContinuation<Unit>
+        continuation: CancellableContinuation<Unit>,
     ) {
         if (isLiteMode) {
             map.moveCamera(update)
@@ -356,7 +339,7 @@ public class CameraPositionState private constructor(
          */
         @StateFactoryMarker
         public operator fun invoke(
-            position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f)
+            position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f),
         ): CameraPositionState = CameraPositionState(position)
 
         /**
@@ -364,7 +347,7 @@ public class CameraPositionState private constructor(
          */
         public val Saver: Saver<CameraPositionState, CameraPosition> = Saver(
             save = { it.position },
-            restore = { CameraPositionState(it) }
+            restore = { CameraPositionState(it) },
         )
     }
 }

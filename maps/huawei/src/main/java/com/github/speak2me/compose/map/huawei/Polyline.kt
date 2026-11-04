@@ -140,7 +140,7 @@ public fun Polyline(
 }
 
 /**
- * Internal implementation for an advanced polyline on a Google map.
+ * Internal implementation for an advanced polyline on a Huawei map.
  *
  * @param points the points comprising the polyline
  * @param spans style spans for the polyline

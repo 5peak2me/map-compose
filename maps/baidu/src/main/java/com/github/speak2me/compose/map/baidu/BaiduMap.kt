@@ -15,12 +15,12 @@
  */
 package com.github.speak2me.compose.map.baidu
 
-import android.content.ComponentCallbacks
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.res.Configuration
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.focusable
@@ -60,6 +60,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -74,7 +75,7 @@ import kotlinx.coroutines.launch
  * @param cameraPositionState the [CameraPositionState] to be used to control or observe the map's
  * camera state
  * @param contentDescription the content description for the map used by accessibility services to
- * describe the map. If none is specified, the default is "Google Map".
+ * describe the map. If none is specified, the default is "Baidu Map".
  * @param baiduMapOptionsFactory the block for creating the [BaiduMapOptions] provided when the
  * map is created
  * @param properties the properties for the map
@@ -86,7 +87,7 @@ import kotlinx.coroutines.launch
  * @param onMyLocationClick lambda invoked when the my location dot is clicked
  * @param onPOIClick lambda invoked when a POI is clicked
  * @param contentPadding the padding values used to signal that portions of the map around the edges
- * may be obscured. The map will move the Google logo, etc. to avoid overlapping the padding.
+ * may be obscured. The map will move the Baidu logo, etc. to avoid overlapping the padding.
  * @param mapColorScheme Defines the color scheme for the Map.
  * @param content the content of the map
  */
@@ -161,7 +162,6 @@ public fun BaiduMap(
 
     val parentComposition = rememberCompositionContext()
     val currentContent by rememberUpdatedState(content)
-    var subcompositionJob by remember { mutableStateOf<Job?>(null) }
     val parentCompositionScope = rememberCoroutineScope()
 
     AndroidView(
@@ -171,69 +171,53 @@ public fun BaiduMap(
         modifier = if (focusable) modifier.focusable() else modifier,
         factory = { context ->
             val options = baiduMapOptionsFactory()
+
             mapViewFactory(context, options).also { mapView ->
                 mapView.applyFocusability(focusable)
                 mapView.setViewTreeLifecycleOwner(lifecycleOwner)
                 mapView.setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
 
-                val componentCallbacks = object : ComponentCallbacks2 {
-                    override fun onConfigurationChanged(newConfig: Configuration) {}
-
-                    @Deprecated(
-                        "Deprecated in Java",
-                        ReplaceWith("onTrimMemory(level)")
-                    )
-                    override fun onLowMemory() { /*mapView.onLowMemory()*/ }
-
-                    override fun onTrimMemory(level: Int) { /*mapView.onLowMemory()*/ }
-                }
+                val componentCallbacks = mapView.componentCallbacks2()
                 context.registerComponentCallbacks(componentCallbacks)
 
                 val lifecycleObserver = MapLifecycleEventObserver(mapView)
 
-                mapView.tag = MapTagData(componentCallbacks, lifecycleObserver)
-
                 // Only register for [lifecycleOwner]'s lifecycle events while MapView is attached
-                val onAttachStateListener = object : View.OnAttachStateChangeListener {
-                    private var lifecycle: Lifecycle? = null
+                val onAttachStateListener = MapAttachStateChangeListener(lifecycleObserver)
 
-                    override fun onViewAttachedToWindow(mapView: View) {
-                        lifecycle = mapView.findViewTreeLifecycleOwner()!!.lifecycle.also {
-                            it.addObserver(lifecycleObserver)
-                        }
-                    }
-
-                    override fun onViewDetachedFromWindow(v: View) {
-                        lifecycle?.removeObserver(lifecycleObserver)
-                        lifecycle = null
-                        lifecycleObserver.moveToBaseState()
-                    }
-                }
+                mapView.tag = MapTagData(
+                    componentCallbacks = componentCallbacks,
+                    lifecycleObserver = lifecycleObserver,
+                    detachLifecycleObserver = onAttachStateListener::cleanup,
+                    onAttachStateChangeListener = onAttachStateListener,
+                    isLiteMode = false,
+                )
 
                 mapView.addOnAttachStateChangeListener(onAttachStateListener)
             }
         },
-        onReset = { /* View is detached. */ },
+        onReset = { mapView ->
+            mapView.onReset()
+        },
         onRelease = { mapView ->
-            val (componentCallbacks, lifecycleObserver) = mapView.tagData
-            mapView.context.unregisterComponentCallbacks(componentCallbacks)
-            lifecycleObserver.moveToDestroyedState()
-            mapView.tag = null
+            mapView.onRelease()
         },
         update = { mapView ->
             mapView.applyFocusability(focusable)
             mapView.setViewTreeLifecycleOwner(lifecycleOwner)
             mapView.setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
-            if (subcompositionJob == null) {
-                subcompositionJob = parentCompositionScope.launchSubcomposition(
+            val tagData = mapView.tagDataOrNull
+            if (tagData != null && tagData.subcompositionJob == null) {
+                tagData.subcompositionJob = parentCompositionScope.launchSubcomposition(
                     mapUpdaterState,
                     parentComposition,
                     mapView,
+                    tagData,
                     mapClickListeners,
                     currentContent,
                 )
             }
-        }
+        },
     )
 }
 
@@ -241,7 +225,7 @@ public fun BaiduMap(
  * When [focusable] is true, treat the MapView as a single focus stop.
  * FOCUS_BEFORE_DESCENDANTS ensures the map container gets focused first, and prevents the
  * keyboard focus from tabbing through all internal map elements (like zoom buttons or the
- * Google logo) by default.
+ * Baidu logo) by default.
  * When [focusable] is false, remove the map and all of its internal elements from keyboard
  * focus traversal altogether.
  */
@@ -262,19 +246,28 @@ private fun CoroutineScope.launchSubcomposition(
     mapUpdaterState: MapUpdaterState,
     parentComposition: CompositionContext,
     mapView: MapView,
+    tagData: MapTagData,
     mapClickListeners: MapClickListeners,
     content: @Composable @BaiduMapComposable () -> Unit,
 ): Job {
     // Use [CoroutineStart.UNDISPATCHED] to kick off BaiduMap loading immediately
     return launch(
-        context = Dispatchers.Main,
-        start = CoroutineStart.UNDISPATCHED
+        context = Dispatchers.Main.immediate,
+        start = CoroutineStart.UNDISPATCHED,
     ) {
         val map = mapView.awaitMap()
+        if (!isActive || mapView.tagDataOrNull !== tagData) {
+            return@launch
+        }
         val composition = Composition(
-            applier = MapApplier(map, mapView, mapClickListeners),
-            parent = parentComposition
+            applier = MapApplier(
+                map,
+                mapView,
+                mapClickListeners,
+            ),
+            parent = parentComposition,
         )
+        tagData.subcomposition = composition
 
         try {
             composition.setContent {
@@ -284,11 +277,14 @@ private fun CoroutineScope.launchSubcomposition(
 
                 CompositionLocalProvider(
                     LocalCameraPositionState provides mapUpdaterState.cameraPositionState,
-                    content
+                    content,
                 )
             }
             awaitCancellation()
         } finally {
+            if (tagData.subcomposition === composition) {
+                tagData.subcomposition = null
+            }
             composition.dispose()
         }
     }
@@ -313,14 +309,94 @@ internal class MapUpdaterState(
     var mapColorScheme by mutableStateOf(mapColorScheme)
 }
 
-/** Used to store things in the tag which must be retrievable across recompositions */
-private data class MapTagData(
-    val componentCallbacks: ComponentCallbacks,
-    val lifecycleObserver: MapLifecycleEventObserver
-)
+private const val TAG = "BaiduMap"
 
-private val MapView.tagData: MapTagData
-    get() = tag as MapTagData
+/** Used to store things in the tag which must be retrievable across recompositions */
+private class MapTagData(
+    val componentCallbacks: ComponentCallbacks2,
+    val lifecycleObserver: MapLifecycleEventObserver,
+    val detachLifecycleObserver: () -> Unit,
+    val onAttachStateChangeListener: View.OnAttachStateChangeListener,
+    val isLiteMode: Boolean,
+) {
+    var subcompositionJob: Job? = null
+    var subcomposition: Composition? = null
+
+    fun disposeSubcomposition() {
+        subcompositionJob?.cancel()
+        subcompositionJob = null
+        subcomposition?.dispose()
+        subcomposition = null
+    }
+}
+
+private class MapAttachStateChangeListener(private val lifecycleObserver: MapLifecycleEventObserver) :
+    View.OnAttachStateChangeListener {
+    private var lifecycle: Lifecycle? = null
+
+    override fun onViewAttachedToWindow(mapView: View) {
+        val viewTreeLifecycleOwner = mapView.findViewTreeLifecycleOwner()
+        if (viewTreeLifecycleOwner == null) {
+            val message =
+                "ViewTreeLifecycleOwner not found for MapView; cannot observe lifecycle events."
+            Log.e(TAG, message)
+            error(message)
+        }
+        lifecycle = viewTreeLifecycleOwner.lifecycle.also {
+            it.addObserver(lifecycleObserver)
+        }
+    }
+
+    override fun onViewDetachedFromWindow(v: View) {
+        cleanup()
+    }
+
+    fun cleanup() {
+        lifecycle?.removeObserver(lifecycleObserver)
+        lifecycle = null
+        lifecycleObserver.moveToBaseState()
+    }
+}
+
+internal fun MapView.componentCallbacks2(): ComponentCallbacks2 = object : ComponentCallbacks2 {
+    override fun onConfigurationChanged(newConfig: Configuration) {}
+
+    @Deprecated(
+        "Deprecated in Java",
+        ReplaceWith("onTrimMemory(level)"),
+    )
+    override fun onLowMemory() {
+//        this@componentCallbacks2.onLowMemory()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+//            this@componentCallbacks2.onLowMemory()
+        }
+    }
+}
+
+private val MapView.tagDataOrNull: MapTagData?
+    get() = tag as? MapTagData
+
+internal fun MapView.onReset() {
+    tagDataOrNull?.disposeSubcomposition()
+}
+
+internal fun MapView.onRelease() {
+    val tagData = tagDataOrNull
+    tagData?.disposeSubcomposition()
+    if (tagData != null) {
+        context.unregisterComponentCallbacks(tagData.componentCallbacks)
+        removeOnAttachStateChangeListener(tagData.onAttachStateChangeListener)
+        tagData.detachLifecycleObserver()
+        tagData.lifecycleObserver.moveToDestroyedState()
+    }
+    setViewTreeLifecycleOwner(null)
+    setViewTreeSavedStateRegistryOwner(null)
+    removeAllViews()
+    tag = null
+}
 
 public typealias BaiduMapFactory = @Composable () -> Unit
 
@@ -339,25 +415,23 @@ public fun baiduMapFactory(
     cameraPositionState: CameraPositionState = rememberCameraPositionState(),
     onMapLoaded: () -> Unit = {},
     content: @Composable () -> Unit = {}
-): BaiduMapFactory {
-    return {
-        val uiSettings by remember { mutableStateOf(MapUiSettings(compassEnabled = false)) }
-        val mapProperties by remember {
-            mutableStateOf(MapProperties(mapType = MapType.NORMAL))
-        }
+): BaiduMapFactory = {
+    val uiSettings by remember { mutableStateOf(MapUiSettings(compassEnabled = false)) }
+    val mapProperties by remember {
+        mutableStateOf(MapProperties(mapType = MapType.NORMAL))
+    }
 
-        val mapVisible by remember { mutableStateOf(true) }
+    val mapVisible by remember { mutableStateOf(true) }
 
-        if (mapVisible) {
-            BaiduMap(
-                modifier = modifier,
-                cameraPositionState = cameraPositionState,
-                properties = mapProperties,
-                uiSettings = uiSettings,
-                onMapLoaded = onMapLoaded,
-                content = content
-            )
-        }
+    if (mapVisible) {
+        BaiduMap(
+            modifier = modifier,
+            cameraPositionState = cameraPositionState,
+            properties = mapProperties,
+            uiSettings = uiSettings,
+            onMapLoaded = onMapLoaded,
+            content = content,
+        )
     }
 }
 
@@ -368,6 +442,7 @@ private class MapLifecycleEventObserver(private val mapView: MapView) : Lifecycl
         when (event) {
             // [mapView.onDestroy] is only invoked from AndroidView->onRelease.
             Lifecycle.Event.ON_DESTROY -> moveToBaseState()
+
             else -> moveToLifecycleState(event.targetState)
         }
     }

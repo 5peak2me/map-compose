@@ -317,7 +317,7 @@ internal class MapUpdaterState(
     var mapColorScheme by mutableStateOf(mapColorScheme)
 }
 
-private const val TAG = "GoogleMap"
+private const val TAG = "AMap"
 
 /** Used to store things in the tag which must be retrievable across recompositions */
 internal class MapTagData(

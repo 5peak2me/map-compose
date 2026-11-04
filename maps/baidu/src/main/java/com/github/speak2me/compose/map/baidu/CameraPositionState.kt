@@ -51,29 +51,8 @@ import kotlin.coroutines.resumeWithException
  */
 @Composable
 public inline fun rememberCameraPositionState(
-    crossinline init: CameraPositionState.() -> Unit = {}
+    crossinline init: CameraPositionState.() -> Unit = {},
 ): CameraPositionState = rememberSaveable(saver = CameraPositionState.Saver) {
-    CameraPositionState().apply(init)
-}
-
-/**
- * Create and [rememberSaveable] a [CameraPositionState] using [CameraPositionState.Saver].
- * [init] will be called when the [CameraPositionState] is first created to configure its
- * initial state. Remember that the camera state can be applied when the map has been
- * loaded.
- */
-@Deprecated(
-    message = "The 'key' parameter is deprecated. Please use the new `rememberCameraPositionState` function without a key.",
-    replaceWith = ReplaceWith(
-        "rememberCameraPositionState(init)",
-        "com.google.maps.android.compose.rememberCameraPositionState"
-    )
-)
-@Composable
-public inline fun rememberCameraPositionState(
-    key: String? = null,
-    crossinline init: CameraPositionState.() -> Unit = {}
-): CameraPositionState = rememberSaveable(key = key, saver = CameraPositionState.Saver) {
     CameraPositionState().apply(init)
 }
 
@@ -85,7 +64,7 @@ public inline fun rememberCameraPositionState(
  * @param position the initial camera position
  */
 public class CameraPositionState private constructor(
-    position: MapStatus = MapStatus.Builder().target(LatLng(0.0, 0.0)).build()
+    position: MapStatus = MapStatus.Builder().target(LatLng(0.0, 0.0)).build(),
 ) {
     internal var isLiteMode: Boolean = false
 
@@ -144,6 +123,10 @@ public class CameraPositionState private constructor(
             synchronized(lock) {
                 val map = map
                 if (map == null) {
+                    // An explicit position overrides any pending move or animation.
+                    movementOwner = null
+                    onMapChanged?.onCancelLocked()
+                    onMapChanged = null
                     rawPosition = value
                 } else {
                     map.animateMapStatus(MapStatusUpdateFactory.newMapStatus(value))
@@ -247,9 +230,9 @@ public class CameraPositionState private constructor(
                             override fun onMapChangedLocked(newMap: BaiduMap?) {
                                 if (newMap == null) {
                                     // Cancel the animate caller and crash the map setter
-                                    @Suppress("ThrowableNotThrown")
-                                    continuation.resumeWithException(CancellationException(
-                                        "internal error; no BaiduMap available"))
+                                    continuation.resumeWithException(
+                                        CancellationException("internal error; no BaiduMap available")
+                                    )
                                     error(
                                         "internal error; no BaiduMap available to animate position"
                                     )
@@ -259,7 +242,7 @@ public class CameraPositionState private constructor(
 
                             override fun onCancelLocked() {
                                 continuation.resumeWithException(
-                                    CancellationException("Animation cancelled")
+                                    CancellationException("Animation cancelled"),
                                 )
                             }
                         }
