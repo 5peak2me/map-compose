@@ -51,7 +51,7 @@ import kotlin.coroutines.resumeWithException
  */
 @Composable
 public inline fun rememberCameraPositionState(
-    crossinline init: CameraPositionState.() -> Unit = {}
+    crossinline init: CameraPositionState.() -> Unit = {},
 ): CameraPositionState = rememberSaveable(saver = CameraPositionState.Saver) {
     CameraPositionState().apply(init)
 }
@@ -64,7 +64,7 @@ public inline fun rememberCameraPositionState(
  * @param position the initial camera position
  */
 public class CameraPositionState private constructor(
-    position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f)
+    position: CameraPosition = CameraPosition(LatLng(0.0, 0.0), 0f, 0f, 0f),
 ) {
     /**
      * Whether the camera is currently moving or not. This includes any kind of movement:
@@ -79,7 +79,7 @@ public class CameraPositionState private constructor(
      * [CameraMoveStartedReason.UNKNOWN] if an unknown constant is received from the Maps SDK.
      */
     public var cameraMoveStartedReason: CameraMoveStartedReason by mutableStateOf(
-        CameraMoveStartedReason.NO_MOVEMENT_YET
+        CameraMoveStartedReason.NO_MOVEMENT_YET,
     )
         internal set
 
@@ -121,6 +121,10 @@ public class CameraPositionState private constructor(
             synchronized(lock) {
                 val map = map
                 if (map == null) {
+                    // An explicit position overrides any pending move or animation.
+                    movementOwner = null
+                    onMapChanged?.onCancelLocked()
+                    onMapChanged = null
                     rawPosition = value
                 } else {
                     map.moveCamera(CameraUpdateFactory.newCameraPosition(value))
@@ -225,10 +229,11 @@ public class CameraPositionState private constructor(
                                 if (newMap == null) {
                                     // Cancel the animate caller and crash the map setter
                                     @Suppress("ThrowableNotThrown")
-                                    continuation.resumeWithException(CancellationException(
-                                        "internal error; no AMap available"))
+                                    continuation.resumeWithException(
+                                        CancellationException("internal error; no AMap available"),
+                                    )
                                     error(
-                                        "internal error; no AMap available to animate position"
+                                        "internal error; no AMap available to animate position",
                                     )
                                 }
                                 performAnimateCameraLocked(newMap, update, durationMs, continuation)
@@ -236,7 +241,7 @@ public class CameraPositionState private constructor(
 
                             override fun onCancelLocked() {
                                 continuation.resumeWithException(
-                                    CancellationException("Animation cancelled")
+                                    CancellationException("Animation cancelled"),
                                 )
                             }
                         }
@@ -272,7 +277,7 @@ public class CameraPositionState private constructor(
         map: AMap,
         update: CameraUpdate,
         durationMs: Int,
-        continuation: CancellableContinuation<Unit>
+        continuation: CancellableContinuation<Unit>,
     ) {
         val cancelableCallback = object : AMap.CancelableCallback {
             override fun onCancel() {
@@ -327,7 +332,7 @@ public class CameraPositionState private constructor(
          */
         @StateFactoryMarker
         public operator fun invoke(
-            position: CameraPosition = CameraPosition(LatLng(39.92421106207774,116.39786327434547), 10f, 0f, 0f), // default parameters
+            position: CameraPosition = CameraPosition(LatLng(39.92421106207774, 116.39786327434547), 10f, 0f, 0f), // default parameters
         ): CameraPositionState = CameraPositionState(position)
 
         /**
@@ -335,7 +340,7 @@ public class CameraPositionState private constructor(
          */
         public val Saver: Saver<CameraPositionState, CameraPosition> = Saver(
             save = { it.position },
-            restore = { CameraPositionState(it) }
+            restore = { CameraPositionState(it) },
         )
     }
 }
