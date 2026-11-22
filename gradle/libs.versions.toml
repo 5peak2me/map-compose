@@ -23,7 +23,7 @@ okhttpBom = "5.5.1"
 retrofit = "3.0.0"
 viewpager2 = "1.1.0"
 constraintlayout = "2.2.2"
-dokka = "2.2.0"
+dokka = "2.3.0"
 
 compileSdk = "37"
 minSdk = "24"
